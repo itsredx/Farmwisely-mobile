@@ -1,0 +1,157 @@
+import 'package:flutter/material.dart';
+import '../widgets/weather_card.dart';
+import '../widgets/custom_card.dart';
+import '../widgets/info_card.dart'; // Import the WeatherCard widget
+
+class Home extends StatelessWidget {
+  const Home({super.key, required this.onPageChange});
+  final Function(int) onPageChange;
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16.0, right: 16.0),
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            const SizedBox(
+              height: 16,
+            ),
+            WeatherCard(
+              temperature: '33',
+              weatherPridiction: 'Rain fall expected in 2 hours',
+              weatherCondition: 'Humid',
+              description: 'New York',
+              buttonText: 'View More',
+              onButtonPressed: () {},
+            ),
+            const SizedBox(
+              height: 16,
+            ),
+            Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: InfoCard(
+                        image: 'assets/images/my_farm.jpg',
+                        title: 'My Farm',
+                        subtitle: 'subtitle',
+                        onPressed: () { 
+                          onPageChange(1);
+                        },
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 16,
+                    ),
+                    Expanded(
+                      child: InfoCard(
+                        image: 'assets/images/recommendations.jpg',
+                        title: 'Recommendations',
+                        subtitle: 'subtitle',
+                        onPressed: () {},
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(
+                  height: 16,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: InfoCard(
+                        image: 'assets/images/chat.jpg',
+                        title: 'Chat',
+                        subtitle: 'subtitle',
+                        onPressed: () {},
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 16,
+                    ),
+                    Expanded(
+                      child: InfoCard(
+                        image: 'assets/images/weather_forecast.jpg',
+                        title: 'Waather Forecast',
+                        subtitle: 'subtitle',
+                        onPressed: () {},
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(
+                  height: 16,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: InfoCard(
+                        image: 'assets/images/market_price.jpg',
+                        title: 'Market Price',
+                        subtitle: 'subtitle',
+                        onPressed: () {},
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 16,
+                    ),
+                    Expanded(
+                      child: InfoCard(
+                        image: 'assets/images/analytics.jpg',
+                        title: 'Analytics',
+                        subtitle: 'subtitle',
+                        onPressed: () { 
+                          onPageChange(2);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(
+              height: 16,
+            ),
+            Padding(
+              padding: const EdgeInsets.all(0),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    CustomCard(
+                      title: 'Market Price',
+                      description:
+                          'Get the latest market prices for your crops.',
+                      onPressed: () {}, // Empty onPressed for now
+                    ),
+                    const SizedBox(width: 16),
+                    CustomCard(
+                      title: 'Analytics',
+                      description: 'View detailed analytics of your farm.',
+                      onPressed: () {}, // Empty onPressed for now
+                    ),
+                    const SizedBox(width: 16),
+                    CustomCard(
+                      title: 'Recommendations',
+                      description:
+                          'Get personalized recommendations for your farm.',
+                      onPressed: () {}, // Empty onPressed for now
+                    ),
+                  ],
+                ),
+              ),
+            ), // Display the WeatherCard
+            const SizedBox(
+              height: 16,
+            ),
+            // Other home screen content can be added here
+          ],
+        ),
+      ),
+    );
+  }
+}
