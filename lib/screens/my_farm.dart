@@ -62,7 +62,7 @@ class _MyFarmState extends State<MyFarm> {
 
   // Method to skip and go back to previous screen
   void _skip() {
-    Navigator.of(context).pop();
+    widget.onPageChange(0);
   }
 
   @override

@@ -53,7 +53,7 @@ class CustomCard extends StatelessWidget {
                     if (onPressed != null) onPressed!();
                   },
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.grey),
+                    side: const BorderSide(color: AppColors.secondary),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(28.0),
                     ),
@@ -61,7 +61,7 @@ class CustomCard extends StatelessWidget {
                   child: const Text(
                     'Learn More',
                     style: TextStyle(
-                      color: AppColors.grey,
+                      color: AppColors.secondary,
                     ),
                     ),
                 ),
