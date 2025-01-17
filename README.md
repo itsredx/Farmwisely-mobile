@@ -1,4 +1,4 @@
-# myapp
+# Farmwisely
 
 A new Flutter project.
 
