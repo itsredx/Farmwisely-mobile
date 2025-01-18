@@ -128,8 +128,8 @@ class _MyAppState extends State<MyApp> {
             body: [
               Home(onPageChange: onPageChanged), // Pass the callback
               MyFarm(onPageChange: onPageChanged),
-              const Analytics(),
-              Settings(onPageChange: onPageChanged,),
+              Analytics(onPageChange: onPageChanged),
+              Settings(onPageChange: onPageChanged),
             ][selectedPageIndex],
             bottomNavigationBar: NavigationBar(
               backgroundColor: const Color.fromRGBO(164, 213, 166, 1),

@@ -37,6 +37,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   transparent_image: ^2.0.1
   shared_preferences: ^2.3.5
+  syncfusion_flutter_charts: ^20.3.60
+  syncfusion_flutter_gauges: ^20.3.60
 
 dev_dependencies:
   flutter_test:
