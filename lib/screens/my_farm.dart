@@ -79,27 +79,20 @@ class _MyFarmState extends State<MyFarm> {
     // Get the saved JSON data (if it exists)
     String? jsonData = prefs.getString('farmData');
 
-    if (jsonData != null) {
-      // Print the raw JSON data to the console for debugging
+    // Print the raw JSON data to the console for debugging
 
-      print('Raw JSON Data: $jsonData');
+    print('Raw JSON Data: $jsonData');
 
-      // Decode the JSON data
-      Map<String, dynamic> decodedData = jsonDecode(jsonData);
+    // Decode the JSON data
+    Map<String, dynamic> decodedData = jsonDecode(jsonData!);
 
-      // Print the decoded data for debugging
+    // Print the decoded data for debugging
 
-      print('Decoded Data: $decodedData');
-      /*
-        ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Farm data $decodedData')));*/
-    } else {
-      print('No data found in SharedPreferences');
-      /*
-        ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No data found in SharedPreferences')));*/
+    print('Decoded Data: $decodedData');
+    /*
+      ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Farm data $decodedData')));*/
     }
-  }
 
   @override
   Widget build(BuildContext context) {

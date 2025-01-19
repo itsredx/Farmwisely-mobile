@@ -1,3 +1,7 @@
+import 'package:farmwisely/screens/ai_chat.dart';
+import 'package:farmwisely/screens/help.dart';
+import 'package:farmwisely/screens/recommendations.dart';
+import 'package:farmwisely/screens/weather.dart';
 import 'package:farmwisely/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:farmwisely/screens/analytics.dart';
@@ -33,6 +37,12 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
         title: 'Farmwisely',
+        routes: {
+        '/chat': (context) => AiChatScreen(), // Register the additional page
+        '/help': (context) => HelpScreen(),
+        '/recommendations': (context) => RecommendationsScreen(),
+        '/weather': (context) => WeatherScreen(),
+      },
         home: PopScope(
           // ignore: deprecated_member_use
           onPopInvoked: (didPop) {

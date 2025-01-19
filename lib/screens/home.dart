@@ -37,7 +37,7 @@ class Home extends StatelessWidget {
                         image: 'assets/images/my_farm.jpg',
                         title: 'My Farm',
                         subtitle: 'subtitle',
-                        onPressed: () { 
+                        onPressed: () {
                           onPageChange(1);
                         },
                       ),
@@ -50,7 +50,9 @@ class Home extends StatelessWidget {
                         image: 'assets/images/recommendations.jpg',
                         title: 'Recommendations',
                         subtitle: 'subtitle',
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/recommendations');
+                        },
                       ),
                     ),
                   ],
@@ -66,7 +68,9 @@ class Home extends StatelessWidget {
                         image: 'assets/images/chat.jpg',
                         title: 'Chat',
                         subtitle: 'subtitle',
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/chat');
+                        },
                       ),
                     ),
                     const SizedBox(
@@ -77,7 +81,9 @@ class Home extends StatelessWidget {
                         image: 'assets/images/weather_forecast.jpg',
                         title: 'Waather Forecast',
                         subtitle: 'subtitle',
-                        onPressed: () {},
+                        onPressed: () {
+                           Navigator.pushNamed(context, '/weather');
+                        },
                       ),
                     ),
                   ],
@@ -91,9 +97,11 @@ class Home extends StatelessWidget {
                     Expanded(
                       child: InfoCard(
                         image: 'assets/images/market_price.jpg',
-                        title: 'Market Price',
+                        title: 'Help',
                         subtitle: 'subtitle',
-                        onPressed: () {},
+                        onPressed: () {
+                           Navigator.pushNamed(context, '/help');
+                        },
                       ),
                     ),
                     const SizedBox(
@@ -104,7 +112,7 @@ class Home extends StatelessWidget {
                         image: 'assets/images/analytics.jpg',
                         title: 'Analytics',
                         subtitle: 'subtitle',
-                        onPressed: () { 
+                        onPressed: () {
                           onPageChange(2);
                         },
                       ),
@@ -126,20 +134,20 @@ class Home extends StatelessWidget {
                       title: 'Market Price',
                       description:
                           'Get the latest market prices for your crops.',
-                      onPressed: () {}, // Empty onPressed for now
+                      onPressed: () {}, width: 300, // Empty onPressed for now
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 8),
                     CustomCard(
                       title: 'Analytics',
                       description: 'View detailed analytics of your farm.',
-                      onPressed: () {}, // Empty onPressed for now
+                      onPressed: () {}, width: 300, // Empty onPressed for now
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 8),
                     CustomCard(
                       title: 'Recommendations',
                       description:
                           'Get personalized recommendations for your farm.',
-                      onPressed: () {}, // Empty onPressed for now
+                      onPressed: () {}, width: 300, // Empty onPressed for now
                     ),
                   ],
                 ),

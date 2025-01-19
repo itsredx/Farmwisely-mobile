@@ -41,6 +41,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.0"
+  community_charts_common:
+    dependency: transitive
+    description:
+      name: community_charts_common
+      sha256: d997ade57f15490346de46efbe23805d378a672aafbf5e47e19517964b671009
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.4"
+  community_charts_flutter:
+    dependency: transitive
+    description:
+      name: community_charts_flutter
+      sha256: "4614846b99782ab79b613687704865e5468ecada3f0ad1afe1cdc3ff5b727f72"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.4"
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -49,6 +65,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.8"
+  d_chart:
+    dependency: "direct main"
+    description:
+      name: d_chart
+      sha256: "8cd3d41129ebb26ce86200b2f131bfc7aade2a19686c5e1ef94095c506119596"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.10.2"
   fake_async:
     dependency: transitive
     description:
@@ -82,10 +106,10 @@ packages:
     dependency: "direct dev"
     description:
       name: flutter_lints
-      sha256: "3f41d009ba7172d5ff9be5f6e6e6abb4300e263aab8866d2a0842ed2a70f8f0c"
+      sha256: "5398f14efa795ffb7a33e9b6a08798b26a180edac4ad7db3f231e40f82ce11e1"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.0"
+    version: "5.0.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -97,7 +121,7 @@ packages:
     source: sdk
     version: "0.0.0"
   intl:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: intl
       sha256: d6f56758b7d3014a48af9701c085700aac781a92a87a62b1333b46d8879661cf
@@ -132,10 +156,10 @@ packages:
     dependency: transitive
     description:
       name: lints
-      sha256: "976c774dd944a42e83e2467f4cc670daef7eed6295b10b36ae8c85bcbf828235"
+      sha256: "4a16b3f03741e1252fda5de3ce712666d010ba2122f8e912c94f9f7b90e1a4c3"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.0"
+    version: "5.1.0"
   matcher:
     dependency: transitive
     description:
@@ -301,14 +325,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.0"
-  syncfusion_flutter_charts:
-    dependency: "direct main"
-    description:
-      name: syncfusion_flutter_charts
-      sha256: "0222ac9d8cb6c671f014effe9bd5c0aef35eadb16471355345ba87cc0ac007b3"
-      url: "https://pub.dev"
-    source: hosted
-    version: "20.4.54"
   syncfusion_flutter_core:
     dependency: transitive
     description:

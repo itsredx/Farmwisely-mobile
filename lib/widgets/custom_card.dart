@@ -4,13 +4,14 @@ import 'package:flutter/material.dart';
 class CustomCard extends StatelessWidget {
   final String title;
   final String description;
+  final double width;
   final void Function()? onPressed;
 
   const CustomCard({
     super.key,
     required this.title,
     required this.description,
-    this.onPressed,
+    this.onPressed, required this.width,
   });
 
   @override
@@ -23,7 +24,7 @@ class CustomCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SizedBox(
-          width: 300,
+          width: width,
           height: 180,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,11 +40,13 @@ class CustomCard extends StatelessWidget {
               const SizedBox(height: 8.0),
               Text(
                 description,
-                maxLines: 2,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.grey,
-                  fontSize: 16.0),
+                style: TextStyle(
+                  color: AppColors.grey, 
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.w400,
+                  ),
               ),
               const Expanded(child: SizedBox(height: 16.0)),
               Align(
@@ -61,9 +64,9 @@ class CustomCard extends StatelessWidget {
                   child: const Text(
                     'Learn More',
                     style: TextStyle(
-                      color: AppColors.secondary,
+                      color: AppColors.grey,
                     ),
-                    ),
+                  ),
                 ),
               ),
             ],

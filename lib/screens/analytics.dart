@@ -1,4 +1,7 @@
 import 'package:farmwisely/utils/colors.dart';
+import 'package:farmwisely/widgets/bar_graph.dart';
+import 'package:farmwisely/widgets/custom_card.dart';
+import 'package:farmwisely/widgets/pie_chart.dart';
 import 'package:farmwisely/widgets/radial_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -11,8 +14,12 @@ class Analytics extends StatefulWidget {
 }
 
 class _AnalyticsState extends State<Analytics> {
+  
+  List<double> chartData = [50, 30, 20];
+
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -43,17 +50,17 @@ class _AnalyticsState extends State<Analytics> {
         ],
         backgroundColor: AppColors.background,
       ),
-      body: const SingleChildScrollView(
+      body: SingleChildScrollView(
 // Suggested code may be subject to a license. Learn more: ~LicenseLog:2619475361.
         child: Padding(
-          padding: EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Key Metrics',
                     style: TextStyle(
                       color: AppColors.grey,
@@ -61,10 +68,10 @@ class _AnalyticsState extends State<Analytics> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 10,
                   ),
-                  Row(
+                  const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
@@ -84,10 +91,10 @@ class _AnalyticsState extends State<Analytics> {
                       ),
                     ],
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 4,
                   ),
-                  Row(
+                  const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
@@ -107,10 +114,10 @@ class _AnalyticsState extends State<Analytics> {
                       ),
                     ],
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 16,
                   ),
-                  Text(
+                  const Text(
                     'Environmental Impact',
                     style: TextStyle(
                       color: AppColors.grey,
@@ -118,10 +125,10 @@ class _AnalyticsState extends State<Analytics> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 10,
                   ),
-                  Row(
+                  const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
@@ -141,10 +148,10 @@ class _AnalyticsState extends State<Analytics> {
                       ),
                     ],
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 4,
                   ),
-                  Row(
+                  const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
@@ -164,7 +171,49 @@ class _AnalyticsState extends State<Analytics> {
                       ),
                     ],
                   ),
-                  RadialBarChart(),
+                  const SizedBox(
+                    height: 16,
+                  ),
+                  const RadialBarChart(),
+                  const SizedBox(
+                    height: 16,
+                  ),
+                  BarGraph(),
+                  const SizedBox(
+                    height: 16.0,
+                  ),
+                  PieChart(),
+                  const SizedBox(
+                    height: 16.0,
+                  ),
+                  const Text(
+                    'Personalized Recommendations',
+                    style: TextStyle(
+                      color: AppColors.grey,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 16.0,
+                  ),
+                  Column(
+                    children: [
+                      CustomCard(
+                        title: 'Recommended Action', 
+                        description: 'Water the plants, consider switching to drip irrigation for heigher water efficiency.',
+                        width: double.infinity,
+                      ),
+                      const SizedBox(
+                        height: 16.0,
+                      ),
+                      CustomCard(
+                        title: 'Recommended Action', 
+                        description: 'Water the plants, consider switching to drip irrigation for heigher water efficiency.',
+                        width: double.infinity,
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ],

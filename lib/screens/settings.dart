@@ -1,4 +1,4 @@
-// ignore_for_file: no_leading_underscores_for_local_identifiers
+// ignore_for_file: no_leading_underscores_for_local_identifiers, prefer_final_fields
 
 import 'dart:convert';
 import 'package:farmwisely/utils/colors.dart';
@@ -17,9 +17,7 @@ class Settings extends StatefulWidget {
 enum MeasurementUnit { metric, imperial }
 
 class _SettingsState extends State<Settings> {
-  @override
-  Widget build(BuildContext context) {
-    TextEditingController _nameController = TextEditingController();
+  TextEditingController _nameController = TextEditingController();
     TextEditingController _eMailController = TextEditingController();
     TextEditingController _phoneNumberController = TextEditingController();
     bool _weatherAlerts = true;
@@ -59,6 +57,9 @@ class _SettingsState extends State<Settings> {
       );
     }
 
+    
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(

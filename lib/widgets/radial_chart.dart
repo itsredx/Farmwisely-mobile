@@ -62,10 +62,9 @@ class RadialBarChart extends StatelessWidget {
                                   'Water Use',
                                   maxLines: 2,
                                   style: TextStyle(
-                                    color: AppColors.grey,
-                                    fontSize: 12,
-                                    fontStyle: FontStyle.italic
-                                  ),
+                                      color: AppColors.grey,
+                                      fontSize: 12,
+                                      fontStyle: FontStyle.italic),
                                 ),
                                 Text(
                                   '60%',
@@ -79,10 +78,9 @@ class RadialBarChart extends StatelessWidget {
                                   'Carbon Footprint',
                                   maxLines: 2,
                                   style: TextStyle(
-                                    color: AppColors.grey,
-                                    fontSize: 12,
-                                    fontStyle: FontStyle.italic
-                                  ),
+                                      color: AppColors.grey,
+                                      fontSize: 12,
+                                      fontStyle: FontStyle.italic),
                                 ),
                               ],
                             ),
@@ -113,23 +111,25 @@ class RadialBarChart extends StatelessWidget {
             ),
             SizedBox(
               width: double.infinity,
-              child:ElevatedButton(
-                onPressed: (){},
-                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 10), backgroundColor: AppColors.secondary,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              child: ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  backgroundColor: AppColors.secondary,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                ), 
                 child: const Text(
                   'View Details',
                   style: TextStyle(
-                    color: AppColors.grey,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold
-                  ),
-                  )
-            ))
+                      color: AppColors.grey,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
           ],
         ),
       ),
