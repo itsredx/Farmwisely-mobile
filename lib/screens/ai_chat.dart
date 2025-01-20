@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:loading_animations/loading_animations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'package:flutter_svg/flutter_svg.dart'; // Import flutter_svg for svg images
 
 // Data models
 class ChatMessage {
@@ -281,7 +280,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                               },
                             ),
                           );
-                        }).toList(),
+                        }),
                       ],
                     );
                   }),
@@ -408,7 +407,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                                 ],
                               ),
                             );
-                          }).toList(),
+                          }),
                           if (_isThinkingNotifier.value)
                             Align(
                               alignment: Alignment.centerLeft,

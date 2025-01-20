@@ -1,10 +1,12 @@
-// ignore_for_file: no_leading_underscores_for_local_identifiers, prefer_final_fields
+// ignore_for_file: no_leading_underscores_for_local_identifiers, prefer_final_fields, use_build_context_synchronously
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:farmwisely/utils/colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart'; // Add image_picker package
 
 class Settings extends StatefulWidget {
   const Settings({super.key, required this.onPageChange});
@@ -24,6 +26,22 @@ class _SettingsState extends State<Settings> {
   bool _cropGrowthUpdates = false;
   bool _farmTaskReminders = true;
   MeasurementUnit _selectedUnit = MeasurementUnit.metric;
+  String? _profileImage;
+  late ImageProvider
+      _imageProvider; // Store the image provider for profile image
+
+  File? _imageFile;
+
+  Future<void> _pickImageFromGallery() async {
+    final pickedFile = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
+    setState(() {
+      _imageFile = File(pickedFile!.path);
+    });
+  }
+
+
 
   // Method to save the data as JSON
   Future<void> _saveData() async {
@@ -34,13 +52,14 @@ class _SettingsState extends State<Settings> {
 
     // Prepare data
     final Map<String, dynamic> farmData = {
-      'name': name, // Add farm name from TextField to JSON
+      'name': name,
       'email': email,
       'phoneNumber': phoneNumber,
-      'measurementUnit': _selectedUnit, // Add soil type from dropdown to JSON
+      'measurementUnit': _selectedUnit.toString(),
       'weatherAlerts': _weatherAlerts,
       'cropGrowthUpdates': _cropGrowthUpdates,
       'farmTaskReminders': _farmTaskReminders,
+      'profileImage': _profileImage,
     };
 
     // Encode data to JSON
@@ -49,12 +68,49 @@ class _SettingsState extends State<Settings> {
     // Get SharedPreferences instance
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(
-        'profileData', jsonData); // Save data in SharedPreferences
+      'profileData',
+      jsonData,
+    ); // Save data in SharedPreferences
+  }
 
-    // Show a confirmation message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile data saved successfully!')),
-    );
+  // Method for picking image
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+    _imageProvider = const AssetImage('assets/images/profile.jpg');
+  }
+
+  Future<void> _loadProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? profileData = prefs.getString('profileData');
+    if (profileData != null) {
+      final Map<String, dynamic> decodedData = json.decode(profileData);
+      setState(() {
+        _nameController.text = decodedData['name'] ?? '';
+        _eMailController.text = decodedData['email'] ?? '';
+        _phoneNumberController.text = decodedData['phoneNumber'] ?? '';
+        _selectedUnit =
+            decodedData['measurementUnit'] == MeasurementUnit.metric.toString()
+                ? MeasurementUnit.metric
+                : MeasurementUnit.imperial;
+        _weatherAlerts = decodedData['weatherAlerts'] ?? true;
+        _cropGrowthUpdates = decodedData['cropGrowthUpdates'] ?? false;
+        _farmTaskReminders = decodedData['farmTaskReminders'] ?? true;
+        _profileImage = decodedData[
+            'profileImage']; // load profile image from shared preference
+        if (_profileImage != null) {
+          _imageProvider = FileImage(_imageFile!);
+          // Log when updating ImageProvider
+        } else {
+          _imageProvider = const AssetImage('assets/images/profile.jpg');
+          // Log when updating ImageProvider
+        }
+      });
+    } else {
+      _imageProvider = const AssetImage('assets/images/profile.jpg');
+    }
   }
 
   @override
@@ -83,7 +139,18 @@ class _SettingsState extends State<Settings> {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () async {
+              await _saveData();
+              // Debug Log
+              // Show a confirmation message
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Profile data saved successfully!',
+                  ),
+                ),
+              );
+            },
             icon: const Icon(Icons.save),
           ),
         ],
@@ -108,11 +175,9 @@ class _SettingsState extends State<Settings> {
                     ),
                     Stack(
                       children: [
-                        const CircleAvatar(
+                        CircleAvatar(
                           radius: 70,
-                          backgroundImage: AssetImage(
-                            'assets/images/profile.jpg',
-                          ),
+                          backgroundImage: _imageProvider,
                         ),
                         Positioned(
                           top: 0,
@@ -124,7 +189,11 @@ class _SettingsState extends State<Settings> {
                                     BorderRadius.all(Radius.circular(10))),
                             child: IconButton(
                               icon: const Icon(Icons.edit_outlined),
-                              onPressed: () {},
+                              onPressed: () async {
+                                // Debug log
+                                await _pickImageFromGallery(); // added await for async function
+                                // Debug log
+                              },
                               color: AppColors.grey,
                             ),
                           ),
@@ -307,7 +376,18 @@ class _SettingsState extends State<Settings> {
                     width: 50.0,
                   ),
                   ElevatedButton(
-                    onPressed: _saveData, // Save functionality
+                    onPressed: () async {
+                      // Debug log
+                      await _saveData();
+                      // Show a confirmation message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Profile data saved successfully!',
+                          ),
+                        ),
+                      );
+                    }, // Save functionality
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Colors.white,
                       backgroundColor: AppColors.secondary,
