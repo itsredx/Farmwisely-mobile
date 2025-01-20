@@ -257,7 +257,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: ValueListenableBuilder<List<ChatHistory>>(
                   valueListenable: _chatHistoriesNotifier,
                   builder: (context, chatHistories, child) {
@@ -266,17 +266,20 @@ class _AiChatScreenState extends State<AiChatScreen> {
                     return Column(
                       children: [
                         ...reversedHistories.map((history) {
-                          return ListTile(
-                            leading: const Icon(Icons.chat),
-                            title: Text(history.title),
-                            tileColor: AppColors.primary,
-                            selectedColor: AppColors.secondary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                          return Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: ListTile(
+                              leading: const Icon(Icons.chat_bubble_outline_outlined),
+                              title: Text(history.title),
+                              tileColor: AppColors.primary,
+                              selectedColor: AppColors.secondary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              onTap: () {
+                                _handleDrawerItemTap(history.title);
+                              },
                             ),
-                            onTap: () {
-                              _handleDrawerItemTap(history.title);
-                            },
                           );
                         }).toList(),
                       ],
