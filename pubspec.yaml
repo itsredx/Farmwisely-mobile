@@ -40,6 +40,8 @@ dependencies:
   syncfusion_flutter_gauges: ^20.3.60
   d_chart: ^2.10.2
   intl: ^0.19.0
+  loading_animations: ^2.2.0
+  flutter_svg: ^2.0.9
 
 dev_dependencies:
   flutter_test:

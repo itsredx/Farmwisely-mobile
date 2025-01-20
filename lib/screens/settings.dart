@@ -18,46 +18,45 @@ enum MeasurementUnit { metric, imperial }
 
 class _SettingsState extends State<Settings> {
   TextEditingController _nameController = TextEditingController();
-    TextEditingController _eMailController = TextEditingController();
-    TextEditingController _phoneNumberController = TextEditingController();
-    bool _weatherAlerts = true;
-    bool _cropGrowthUpdates = false;
-    bool _farmTaskReminders = true;
-    MeasurementUnit _selectedUnit = MeasurementUnit.metric;
+  TextEditingController _eMailController = TextEditingController();
+  TextEditingController _phoneNumberController = TextEditingController();
+  bool _weatherAlerts = true;
+  bool _cropGrowthUpdates = false;
+  bool _farmTaskReminders = true;
+  MeasurementUnit _selectedUnit = MeasurementUnit.metric;
 
-    // Method to save the data as JSON
-    Future<void> _saveData() async {
-      // Get text from the TextField
-      String name = _nameController.text;
-      String email = _eMailController.text;
-      String phoneNumber = _phoneNumberController.text;
+  // Method to save the data as JSON
+  Future<void> _saveData() async {
+    // Get text from the TextField
+    String name = _nameController.text;
+    String email = _eMailController.text;
+    String phoneNumber = _phoneNumberController.text;
 
-      // Prepare data
-      final Map<String, dynamic> farmData = {
-        'name': name, // Add farm name from TextField to JSON
-        'email': email,
-        'phoneNumber': phoneNumber,
-        'measurementUnit': _selectedUnit, // Add soil type from dropdown to JSON
-        'weatherAlerts': _weatherAlerts,
-        'cropGrowthUpdates': _cropGrowthUpdates,
-        'farmTaskReminders': _farmTaskReminders,
-      };
+    // Prepare data
+    final Map<String, dynamic> farmData = {
+      'name': name, // Add farm name from TextField to JSON
+      'email': email,
+      'phoneNumber': phoneNumber,
+      'measurementUnit': _selectedUnit, // Add soil type from dropdown to JSON
+      'weatherAlerts': _weatherAlerts,
+      'cropGrowthUpdates': _cropGrowthUpdates,
+      'farmTaskReminders': _farmTaskReminders,
+    };
 
-      // Encode data to JSON
-      String jsonData = jsonEncode(farmData);
+    // Encode data to JSON
+    String jsonData = jsonEncode(farmData);
 
-      // Get SharedPreferences instance
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-          'profileData', jsonData); // Save data in SharedPreferences
+    // Get SharedPreferences instance
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        'profileData', jsonData); // Save data in SharedPreferences
 
-      // Show a confirmation message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile data saved successfully!')),
-      );
-    }
+    // Show a confirmation message
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Profile data saved successfully!')),
+    );
+  }
 
-    
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -111,8 +110,9 @@ class _SettingsState extends State<Settings> {
                       children: [
                         const CircleAvatar(
                           radius: 70,
-                          backgroundImage:
-                              AssetImage('assets/images/profile.jpg'),
+                          backgroundImage: AssetImage(
+                            'assets/images/profile.jpg',
+                          ),
                         ),
                         Positioned(
                           top: 0,
@@ -269,54 +269,53 @@ class _SettingsState extends State<Settings> {
               ),
               const SizedBox(
                 height: 16,
-              ), 
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                       Text(
-                        'Farm Information',
-                        style: TextStyle(
-                          color: AppColors.grey,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        'Farm related settings are in the My Farm Page',
-                        style: TextStyle(
-                            color: AppColors.grey,
-                            fontSize: 14,
-                            fontStyle: FontStyle.italic),
-                      ),
-                    ]
               ),
-             const SizedBox(
+              const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Farm Information',
+                      style: TextStyle(
+                        color: AppColors.grey,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      'Farm related settings are in the My Farm Page',
+                      style: TextStyle(
+                          color: AppColors.grey,
+                          fontSize: 14,
+                          fontStyle: FontStyle.italic),
+                    ),
+                  ]),
+              const SizedBox(
                 height: 24,
               ),
               Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton(
-                      onPressed: _skip, // Skip functionality
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: AppColors.grey,
-                      ),
-                      child: const Text('Cancel'),
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: _skip, // Skip functionality
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.grey,
                     ),
-                    const SizedBox(
-                      width: 50.0,
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(
+                    width: 50.0,
+                  ),
+                  ElevatedButton(
+                    onPressed: _saveData, // Save functionality
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.secondary,
                     ),
-                    ElevatedButton(
-                      onPressed: _saveData, // Save functionality
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: AppColors.secondary,
-                      ),
-                      child: const Text('Save'),
-                    ),
-                  ],
-                ),
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
