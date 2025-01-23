@@ -109,7 +109,7 @@ class _MyAppState extends State<MyApp> {
                 ListTile(
                   title: const Text('Chat'),
                   onTap: () {
-                    onPageChanged(3);
+                    Navigator.pushNamed(context, '/chat');
                     scaffoldKey.currentState
                         ?.closeDrawer(); // Close the drawer
                   },
@@ -117,7 +117,7 @@ class _MyAppState extends State<MyApp> {
                 ListTile(
                   title: const Text('Recommendations'),
                   onTap: () {
-                    onPageChanged(3);
+                    Navigator.pushNamed(context, '/recommendations');
                     scaffoldKey.currentState
                         ?.closeDrawer(); // Close the drawer
                   },
@@ -125,7 +125,7 @@ class _MyAppState extends State<MyApp> {
                 ListTile(
                   title: const Text('Weather Forcast'),
                   onTap: () {
-                    onPageChanged(3);
+                    Navigator.pushNamed(context, '/weather');
                     scaffoldKey.currentState
                         ?.closeDrawer(); // Close the drawer
                   },
@@ -133,7 +133,7 @@ class _MyAppState extends State<MyApp> {
                 ListTile(
                   title: const Text('Help'),
                   onTap: () {
-                    onPageChanged(3);
+                    Navigator.pushNamed(context, '/help');
                     scaffoldKey.currentState
                         ?.closeDrawer(); // Close the drawer
                   },
