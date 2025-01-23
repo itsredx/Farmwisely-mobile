@@ -15,6 +15,7 @@ class InfoCard extends StatelessWidget {
       onTap: onPressed,
       child: Container(
         //width: 150,
+        height: 295,
         decoration: BoxDecoration(
           color: AppColors.primary, 
           borderRadius: BorderRadius.circular(12),
@@ -44,10 +45,10 @@ class InfoCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(left: 10),
+              padding: const EdgeInsets.only(left: 10, right: 10),
               child: Text(
                 subtitle,
-                maxLines: 2,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),

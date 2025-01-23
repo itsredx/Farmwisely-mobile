@@ -340,8 +340,8 @@ class _MyFarmState extends State<MyFarm> {
                         const SizedBox(height: 10),
                         Slider(
                           value: _pHValue,
-                          min: 3.0,
-                          max: 10.0,
+                          min: 0.0,
+                          max: 14.0,
                           divisions: 70, // pH values range from 3.0 to 10.0
                           activeColor: AppColors.secondary,
                           inactiveColor: AppColors.grey,

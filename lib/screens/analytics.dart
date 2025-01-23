@@ -51,7 +51,7 @@ class _AnalyticsState extends State<Analytics> {
         backgroundColor: AppColors.background,
       ),
       body: SingleChildScrollView(
-// Suggested code may be subject to a license. Learn more: ~LicenseLog:2619475361.
+      // Suggested code may be subject to a license. Learn more: ~LicenseLog:2619475361.
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(

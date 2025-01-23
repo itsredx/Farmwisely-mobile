@@ -36,7 +36,7 @@ class Home extends StatelessWidget {
                       child: InfoCard(
                         image: 'assets/images/my_farm.jpg',
                         title: 'My Farm',
-                        subtitle: 'subtitle',
+                        subtitle: 'Manage your farm effortlessly.',
                         onPressed: () {
                           onPageChange(1);
                         },
@@ -49,7 +49,7 @@ class Home extends StatelessWidget {
                       child: InfoCard(
                         image: 'assets/images/recommendations.jpg',
                         title: 'Recommendations',
-                        subtitle: 'subtitle',
+                        subtitle: 'Personalized suggestions for your farm.',
                         onPressed: () {
                           Navigator.pushNamed(context, '/recommendations');
                         },
@@ -67,7 +67,7 @@ class Home extends StatelessWidget {
                       child: InfoCard(
                         image: 'assets/images/chat.jpg',
                         title: 'Chat',
-                        subtitle: 'subtitle',
+                        subtitle: 'Connect and get expert advice.',
                         onPressed: () {
                           Navigator.pushNamed(context, '/chat');
                         },
@@ -80,7 +80,7 @@ class Home extends StatelessWidget {
                       child: InfoCard(
                         image: 'assets/images/weather_forecast.jpg',
                         title: 'Waather Forecast',
-                        subtitle: 'subtitle',
+                        subtitle: 'Stay updated with the latest weather trends.',
                         onPressed: () {
                            Navigator.pushNamed(context, '/weather');
                         },
@@ -96,9 +96,9 @@ class Home extends StatelessWidget {
                   children: [
                     Expanded(
                       child: InfoCard(
-                        image: 'assets/images/market_price.jpg',
+                        image: 'assets/images/help.jpg',
                         title: 'Help',
-                        subtitle: 'subtitle',
+                        subtitle: 'Get assistance whenever you need it.',
                         onPressed: () {
                            Navigator.pushNamed(context, '/help');
                         },
@@ -111,7 +111,7 @@ class Home extends StatelessWidget {
                       child: InfoCard(
                         image: 'assets/images/analytics.jpg',
                         title: 'Analytics',
-                        subtitle: 'subtitle',
+                        subtitle: 'Track and analyze your farm\'s performance.',
                         onPressed: () {
                           onPageChange(2);
                         },

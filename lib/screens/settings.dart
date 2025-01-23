@@ -27,8 +27,7 @@ class _SettingsState extends State<Settings> {
   bool _farmTaskReminders = true;
   MeasurementUnit _selectedUnit = MeasurementUnit.metric;
   String? _profileImage;
-  late ImageProvider
-      _imageProvider; // Store the image provider for profile image
+  late ImageProvider _imageProvider;
 
   File? _imageFile;
 
@@ -38,6 +37,7 @@ class _SettingsState extends State<Settings> {
     );
     setState(() {
       _imageFile = File(pickedFile!.path);
+      _imageProvider = FileImage(_imageFile!);
     });
   }
 
@@ -59,7 +59,7 @@ class _SettingsState extends State<Settings> {
       'weatherAlerts': _weatherAlerts,
       'cropGrowthUpdates': _cropGrowthUpdates,
       'farmTaskReminders': _farmTaskReminders,
-      'profileImage': _profileImage,
+      'profileImage': _imageFile?.path,
     };
 
     // Encode data to JSON
@@ -100,16 +100,15 @@ class _SettingsState extends State<Settings> {
         _farmTaskReminders = decodedData['farmTaskReminders'] ?? true;
         _profileImage = decodedData[
             'profileImage']; // load profile image from shared preference
-        if (_profileImage != null) {
-          _imageProvider = FileImage(_imageFile!);
-          // Log when updating ImageProvider
-        } else {
-          _imageProvider = const AssetImage('assets/images/profile.jpg');
-          // Log when updating ImageProvider
-        }
+         if (_profileImage != null) {
+              _imageFile = File(_profileImage!);
+            _imageProvider = FileImage(_imageFile!);
+          }else{
+              _imageProvider = const AssetImage('assets/images/profile.jpg');
+          }
       });
-    } else {
-      _imageProvider = const AssetImage('assets/images/profile.jpg');
+    }else{
+          _imageProvider = const AssetImage('assets/images/profile.jpg');
     }
   }
 
