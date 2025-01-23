@@ -98,8 +98,7 @@ class _SettingsState extends State<Settings> {
         _weatherAlerts = decodedData['weatherAlerts'] ?? true;
         _cropGrowthUpdates = decodedData['cropGrowthUpdates'] ?? false;
         _farmTaskReminders = decodedData['farmTaskReminders'] ?? true;
-        _profileImage = decodedData[
-            'profileImage']; // load profile image from shared preference
+        _profileImage = decodedData['profileImage']; // load profile image from shared preference
          if (_profileImage != null) {
               _imageFile = File(_profileImage!);
             _imageProvider = FileImage(_imageFile!);

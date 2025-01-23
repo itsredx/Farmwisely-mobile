@@ -100,6 +100,44 @@ class _MyAppState extends State<MyApp> {
                         ?.closeDrawer(); // Close the drawer
                   },
                 ),
+                Divider(
+                  color: AppColors.grey,
+                  thickness: 1,
+                  indent: 20,
+                  endIndent: 20,
+                ),
+                ListTile(
+                  title: const Text('Chat'),
+                  onTap: () {
+                    onPageChanged(3);
+                    scaffoldKey.currentState
+                        ?.closeDrawer(); // Close the drawer
+                  },
+                ),
+                ListTile(
+                  title: const Text('Recommendations'),
+                  onTap: () {
+                    onPageChanged(3);
+                    scaffoldKey.currentState
+                        ?.closeDrawer(); // Close the drawer
+                  },
+                ),
+                ListTile(
+                  title: const Text('Weather Forcast'),
+                  onTap: () {
+                    onPageChanged(3);
+                    scaffoldKey.currentState
+                        ?.closeDrawer(); // Close the drawer
+                  },
+                ),
+                ListTile(
+                  title: const Text('Help'),
+                  onTap: () {
+                    onPageChanged(3);
+                    scaffoldKey.currentState
+                        ?.closeDrawer(); // Close the drawer
+                  },
+                ),
               ],
             ),
           ),

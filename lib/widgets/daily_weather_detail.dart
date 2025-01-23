@@ -5,16 +5,16 @@ class DailyWeatherDetail extends StatelessWidget {
   final String day;
   final String temperature;
   final String prediction;
+  final String weatherCondition;
   final VoidCallback onPressed;
   const DailyWeatherDetail({
     super.key,
     required this.day,
     required this.temperature,
     required this.prediction,
-    required this.onPressed,
+    required this.onPressed, required this.weatherCondition,
   });
 
-  get weatherCondition => null;
 
   @override
   Widget build(BuildContext context) {
@@ -46,115 +46,61 @@ class DailyWeatherDetail extends StatelessWidget {
     }
     return GestureDetector(
       onTap: onPressed,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            day,
-            style: TextStyle(
-              color: AppColors.grey,
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          AspectRatio(
-            aspectRatio: 1,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.all(Radius.circular(12)),
-              child: Image.asset(
-                weatherIcon,
-                height: 50,
-                width: 50,
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          Text(
-            temperature,
-            style: TextStyle(
-              color: AppColors.grey,
-              fontSize: 14,
-              fontWeight: FontWeight.normal,
-            ),
-          ),
-          Text(
-            prediction,
-            textAlign: TextAlign.end,
-            style: TextStyle(
-              color: AppColors.grey,
-              fontSize: 14,
-              fontWeight: FontWeight.normal,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class WeatherInsightCard extends StatelessWidget {
-  final IconData? leadingIcon;
-  final String title;
-  final String description;
-
-  const WeatherInsightCard({
-    super.key,
-    required this.title,
-    required this.description, this.leadingIcon,
-  });
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Card(
-      color: AppColors.primary,
-      shape: RoundedRectangleBorder(
+      child: Card(
+        shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              leadingIcon,
-              color: AppColors.grey,
-              size: 40.0,
-            ),
-            Column(
+      color: AppColors.primary,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: SizedBox(
+            width: double.infinity,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 SizedBox(
-                  width: double.infinity,
-                  height: 180,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: AppColors.grey,
-                          fontSize: 20.0,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8.0),
-                      Text(
-                        description,
-                        maxLines: 4,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppColors.grey,
-                          fontSize: 16.0,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
+                  width: 40,
+                  child: Text(
+                    day,
+                    style: TextStyle(
+                      color: AppColors.grey,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Image.asset(
+                  weatherIcon,
+                  height: 40,
+                  width: 40,
+                  fit: BoxFit.cover,
+                ),
+                SizedBox(
+                  width: 70,
+                  child: Text(
+                    temperature,
+                    style: TextStyle(
+                      color: AppColors.grey,
+                      fontSize: 14,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 90,
+                  child: Text(
+                    prediction,
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      color: AppColors.grey,
+                      fontSize: 14,
+                      fontWeight: FontWeight.normal,
+                    ),
                   ),
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );

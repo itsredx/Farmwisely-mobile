@@ -174,15 +174,15 @@ class _AnalyticsState extends State<Analytics> {
                   const SizedBox(
                     height: 16,
                   ),
-                  const RadialBarChart(),
+                  const BarGraph(),
                   const SizedBox(
                     height: 16,
                   ),
-                  BarGraph(),
+                  PieChart(),
                   const SizedBox(
                     height: 16.0,
                   ),
-                  PieChart(),
+                  RadialBarChart(),
                   const SizedBox(
                     height: 16.0,
                   ),

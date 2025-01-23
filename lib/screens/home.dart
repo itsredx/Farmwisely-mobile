@@ -22,7 +22,9 @@ class Home extends StatelessWidget {
               weatherCondition: 'Humid',
               description: 'New York',
               buttonText: 'View More',
-              onButtonPressed: () {},
+              onButtonPressed: () {
+                Navigator.pushNamed(context, '/weather');
+              },
             ),
             const SizedBox(
               height: 16,
@@ -80,9 +82,10 @@ class Home extends StatelessWidget {
                       child: InfoCard(
                         image: 'assets/images/weather_forecast.jpg',
                         title: 'Waather Forecast',
-                        subtitle: 'Stay updated with the latest weather trends.',
+                        subtitle:
+                            'Stay updated with the latest weather trends.',
                         onPressed: () {
-                           Navigator.pushNamed(context, '/weather');
+                          Navigator.pushNamed(context, '/weather');
                         },
                       ),
                     ),
@@ -100,7 +103,7 @@ class Home extends StatelessWidget {
                         title: 'Help',
                         subtitle: 'Get assistance whenever you need it.',
                         onPressed: () {
-                           Navigator.pushNamed(context, '/help');
+                          Navigator.pushNamed(context, '/help');
                         },
                       ),
                     ),
