@@ -1,12 +1,12 @@
-// ignore_for_file: no_leading_underscores_for_local_identifiers, prefer_final_fields, use_build_context_synchronously
+// ignore_for_file: no_leading_underscores_for_local_identifiers, prefer_final_fields, use_build_context_synchronously, unused_field, unused_local_variable
 
 import 'dart:convert';
 import 'dart:io';
 import 'package:farmwisely/utils/colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart'; // Add image_picker package
 
 class Settings extends StatefulWidget {
@@ -32,162 +32,162 @@ class _SettingsState extends State<Settings> {
   File? _imageFile;
   bool _isLoading = true;
   String? _token;
+  int? _userId;
 
   @override
-void initState() {
- super.initState();
- _loadToken();
-}
-Future<void> _loadToken() async {
-   final prefs = await SharedPreferences.getInstance();
-   final String? token = prefs.getString('token');
-   if (token != null) {
-     setState(() {
-       _token = token;
+  void initState() {
+    super.initState();
+    _loadToken();
+  }
+
+  Future<void> _loadToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+      final int? userId = prefs.getInt('userId');
+    if (token != null && userId != null) {
+      setState(() {
+        _token = token;
+        _userId = userId;
         _loadProfileData();
-     });
-   }else{
-     setState(() {
-       _isLoading = false;
-     });
-   }
-}
+      });
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+    Future<void> _loadProfileData() async {
+     try {
+        final response = await http.get(
+            Uri.parse('https://devred.pythonanywhere.com/api/profile/'),
+            headers: {
+                'Authorization': 'Token $_token',
+            },
+        );
+
+          if (response.statusCode == 200) {
+             final decodedData = json.decode(response.body);
+              setState(() {
+                 _nameController.text = decodedData['name'] ?? '';
+                 _eMailController.text = decodedData['email'] ?? '';
+                 _phoneNumberController.text = decodedData['phoneNumber'] ?? '';
+                 _selectedUnit = decodedData['measurementUnit'] == 'metric'
+                     ? MeasurementUnit.metric
+                     : MeasurementUnit.imperial;
+                _weatherAlerts = decodedData['weatherAlerts'] ?? true;
+                 _cropGrowthUpdates = decodedData['cropGrowthUpdates'] ?? false;
+                 _farmTaskReminders = decodedData['farmTaskReminders'] ?? true;
+                 if (decodedData['profileImage'] != null) {
+                    String imageUrl = 'https://devred.pythonanywhere.com' + decodedData['profileImage'];
+                     _profileImage = imageUrl;
+                   _imageProvider = NetworkImage(imageUrl);
+                } else {
+                     _imageProvider =
+                         const AssetImage('assets/images/profile.jpg');
+                }
+                 _isLoading = false;
+              });
+         } else {
+              _showError('Error loading profile data from the server', response.body);
+              setState(() {
+                  _isLoading = false;
+                });
+           }
+    } catch (e) {
+        _showError('An error occurred', e.toString());
+         setState(() {
+             _isLoading = false;
+           });
+    }
+  }
 
   Future<void> _pickImageFromGallery() async {
     final pickedFile = await ImagePicker().pickImage(
       source: ImageSource.gallery,
     );
-    setState(() {
-      _imageFile = File(pickedFile!.path);
-      _imageProvider = FileImage(_imageFile!);
-    });
+     if(pickedFile != null){
+        setState(() {
+            _imageFile = File(pickedFile.path);
+          _imageProvider = FileImage(_imageFile!);
+        });
+     }
+
   }
+ Future<void> _saveProfileData() async {
+        setState(() {
+            _isLoading = true;
+         });
+    try {
+            Map<String, dynamic> profileData = {
+                'name': _nameController.text,
+              'email': _eMailController.text,
+                'phoneNumber': _phoneNumberController.text,
+               'measurementUnit': _selectedUnit.toString().split('.').last,
+              'weatherAlerts': _weatherAlerts,
+                'cropGrowthUpdates': _cropGrowthUpdates,
+                'farmTaskReminders': _farmTaskReminders,
+            };
+            var request = http.MultipartRequest('PATCH', Uri.parse('https://devred.pythonanywhere.com/api/profiles/profile/'));
+            request.headers['Authorization'] = 'Token $_token';
+              request.fields.addAll({
+                 'name': _nameController.text,
+                  'email': _eMailController.text,
+                 'phoneNumber': _phoneNumberController.text,
+                 'measurementUnit': _selectedUnit.toString().split('.').last,
+                 'weatherAlerts': _weatherAlerts.toString(),
+                 'cropGrowthUpdates': _cropGrowthUpdates.toString(),
+                 'farmTaskReminders': _farmTaskReminders.toString(),
+               });
 
-
-
-  // Method to save the data as JSON
-  Future<void> _saveProfileData() async {
- setState(() {
-       _isLoading = true;
-     });
- try {
-   Map<String, dynamic> profileData = {
-     'name': _nameController.text,
-     'email': _eMailController.text,
-     'phoneNumber': _phoneNumberController.text,
-     'measurementUnit': _selectedUnit.toString().split('.').last,
-     'weatherAlerts': _weatherAlerts,
-     'cropGrowthUpdates': _cropGrowthUpdates,
-     'farmTaskReminders': _farmTaskReminders,
-   };
-
-   var request = http.MultipartRequest('PATCH', Uri.parse('http://your_backend_url/api/profile/'));
-   request.headers['Authorization'] = 'Token $_token';
-   request.fields.addAll({
-       'name': _nameController.text,
-       'email': _eMailController.text,
-       'phoneNumber': _phoneNumberController.text,
-       'measurementUnit': _selectedUnit.toString().split('.').last,
-       'weatherAlerts': _weatherAlerts.toString(),
-       'cropGrowthUpdates': _cropGrowthUpdates.toString(),
-       'farmTaskReminders': _farmTaskReminders.toString(),
-   });
-   if (_imageFile != null) {
-         request.files.add(await http.MultipartFile.fromPath('profileImage', _imageFile!.path));
-   }
-   var response = await request.send();
-   if (response.statusCode == 200) {
-     _showSuccess('Profile updated successfully');
-    _loadProfileData();
-   } else {
-     final responseBody = await response.stream.bytesToString();
-     _showError('Error saving profile data', responseBody);
-       setState(() {
-         _isLoading = false;
-       });
-   }
- } catch (e) {
-   _showError('An error occurred', e.toString());
-      setState(() {
-         _isLoading = false;
-       });
- }
-}
-
-
-Future<void> _loadProfileData() async {
- try {
-   final response = await http.get(
-     Uri.parse('http://your_backend_url/api/profile/'),
-     headers: {
-       'Authorization': 'Token $_token',
-     },
-   );
-
-   if (response.statusCode == 200) {
-     final decodedData = json.decode(response.body);
-     setState(() {
-       _nameController.text = decodedData['name'] ?? '';
-       _eMailController.text = decodedData['email'] ?? '';
-       _phoneNumberController.text = decodedData['phoneNumber'] ?? '';
-       _selectedUnit = decodedData['measurementUnit'] == 'metric'
-           ? MeasurementUnit.metric
-           : MeasurementUnit.imperial;
-       _weatherAlerts = decodedData['weatherAlerts'] ?? true;
-       _cropGrowthUpdates = decodedData['cropGrowthUpdates'] ?? false;
-       _farmTaskReminders = decodedData['farmTaskReminders'] ?? true;
-       if (decodedData['profileImage'] != null) {
-           String imageUrl = 'https://your_server_url/' + decodedData['profileImage'];
-           _profileImage = imageUrl;
-         _imageProvider = NetworkImage(imageUrl);
-
-       }else{
-           _imageProvider = const AssetImage('assets/images/profile.jpg');
-       }
-        _isLoading = false;
-     });
-   } else {
-     _showError('Error loading profile data from the server', response.body);
-     setState(() {
-         _isLoading = false;
-       });
-   }
- } catch (e) {
-   _showError('An error occurred', e.toString());
-      setState(() {
-         _isLoading = false;
-       });
- }
-}
-
-void _showError(String message, String details) {
-     showDialog(
-         context: context,
-         builder: (BuildContext context) {
-           return AlertDialog(
-             title: Text('Error'),
-             content: Text('$message\nDetails: $details'),
-             actions: <Widget>[
-               TextButton(
-                 child: Text('OK'),
-                 onPressed: () {
-                   Navigator.of(context).pop();
-                 },
-               ),
-             ],
-           );
-         },
-       );
- }
-  void _showSuccess(String message) {
-         ScaffoldMessenger.of(context).showSnackBar(
-               SnackBar(
-                 content: Text(message),
-                 duration: Duration(seconds: 2),
-               ),
-           );
-      }
-
+            if (_imageFile != null) {
+                request.files.add(await http.MultipartFile.fromPath('profileImage', _imageFile!.path));
+            }
+             var response = await request.send();
+            if (response.statusCode == 200) {
+                 _showSuccess('Profile updated successfully');
+               _loadProfileData();
+            } else {
+                final responseBody = await response.stream.bytesToString();
+                  _showError('Error saving profile data', responseBody);
+                   setState(() {
+                       _isLoading = false;
+                     });
+               }
+     } catch (e) {
+            _showError('An error occurred', e.toString());
+            setState(() {
+                _isLoading = false;
+            });
+    }
+  }
+  void _showError(String message, String details) {
+        showDialog(
+             context: context,
+             builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text('Error'),
+                  content: Text('$message\nDetails: $details'),
+                   actions: <Widget>[
+                      TextButton(
+                        child: Text('OK'),
+                          onPressed: () {
+                              Navigator.of(context).pop();
+                         },
+                       ),
+                    ],
+                 );
+                },
+         );
+    }
+     void _showSuccess(String message) {
+           ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(message),
+                   duration: Duration(seconds: 2),
+                ),
+              );
+         }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -217,21 +217,15 @@ void _showError(String message, String details) {
             onPressed: () async {
               await _saveProfileData();
               // Debug Log
-              // Show a confirmation message
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Profile data saved successfully!',
-                  ),
-                ),
-              );
             },
             icon: const Icon(Icons.save),
           ),
         ],
         backgroundColor: AppColors.background,
       ),
-      body: SingleChildScrollView(
+      body: _isLoading
+           ? Center(child: CircularProgressIndicator())
+        : SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -451,18 +445,7 @@ void _showError(String message, String details) {
                     width: 50.0,
                   ),
                   ElevatedButton(
-                    onPressed: () async {
-                      // Debug log
-                      await _saveProfileData();
-                      // Show a confirmation message
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Profile data saved successfully!',
-                          ),
-                        ),
-                      );
-                    }, // Save functionality
+                    onPressed: _saveProfileData, // Save functionality
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Colors.white,
                       backgroundColor: AppColors.secondary,

@@ -1,9 +1,11 @@
-// ignore_for_file: prefer_final_fields
+// ignore_for_file: prefer_final_fields, unused_field
 
-import 'package:farmwisely/utils/colors.dart';
 import 'dart:convert'; // For JSON encoding
+import 'package:farmwisely/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
 
 class MyFarm extends StatefulWidget {
   const MyFarm({super.key, required this.onPageChange});
@@ -25,9 +27,116 @@ class _MyFarmState extends State<MyFarm> {
   String _selectedSoilType = 'Sandy'; // Default soil type
   String _selectedCurrentCrop = 'Maize'; // Default current crop
   String _selectedFutureCrop = 'Beans';
+  bool _isLoading = true;
+  String? _token;
+  int? _userId;
 
-  // Method to save the data as JSON
-  Future<void> _saveData() async {
+  @override
+  void initState() {
+    super.initState();
+    _loadToken();
+  }
+
+  Future<void> _loadToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+    final int? userId = prefs.getInt('userId');
+    if (token != null && userId != null) {
+      setState(() {
+        _token = token;
+        _userId = userId;
+        _loadData();
+      });
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://devred.pythonanywhere.com/api/farms/'),
+        headers: {
+          'Authorization': 'Token $_token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> farmDataList = json.decode(response.body);
+        if (farmDataList.isNotEmpty) {
+          Map<String, dynamic> decodedData = farmDataList[0];
+          setState(() {
+            _farmNameController.text = decodedData['farmName'] ?? '';
+            _farmLocationController.text = decodedData['farmLocation'] ?? '';
+            _farmSizeController.text = decodedData['farmSize'] ?? '';
+            _selectedSoilType = decodedData['soilType'] ?? 'Sandy';
+            _pHValue = decodedData['pHValue'] ?? 7.0;
+            _selectedCurrentCrop = decodedData['currentCrop'] ?? 'Maize';
+            _selectedFutureCrop = decodedData['futureCrop'] ?? 'Beans';
+            _selectedIrrigation = decodedData['irrigationSystem'] ?? 'Manual';
+            _isLoading = false;
+          });
+        }
+      } else {
+        _showError('Error loading data', response.body);
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      _showError('Error loading data', e.toString());
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+Future<void> _saveData() async {
+        setState(() {
+            _isLoading = true;
+        });
+    try {
+         Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+            final response = await http.post(
+                 Uri.parse('https://devred.pythonanywhere.com/api/farms/'),
+                 headers: {
+                     'Authorization': 'Token $_token',
+                       'Content-Type': 'application/json',
+                  },
+                body: json.encode({
+                 'farmName': _farmNameController.text,
+                   'farmLocation': _farmLocationController.text,
+                   'farmSize': _farmSizeController.text,
+                    'soilType': _selectedSoilType,
+                  'pHValue': _pHValue,
+                    'currentCrop': _selectedCurrentCrop,
+                   'futureCrop': _selectedFutureCrop,
+                   'irrigationSystem': _selectedIrrigation,
+                  'latitude': position.latitude,
+                 'longitude': position.longitude,
+               }),
+             );
+
+            if (response.statusCode == 201) {
+                  _showSuccess("farm data saved successfully");
+                _loadData(); //reload data to update the list.
+               _saveLocalData(); // save in shared preferences
+            } else {
+              _showError("Error", response.body);
+                setState(() {
+                   _isLoading = false;
+                 });
+             }
+     } catch (e) {
+          _showError("Error:", e.toString());
+          setState(() {
+               _isLoading = false;
+           });
+     }
+}
+  Future<void> _saveLocalData() async {
     // Get text from the TextField
     String farmName = _farmNameController.text;
     String farmLocation = _farmLocationController.text;
@@ -52,47 +161,41 @@ class _MyFarmState extends State<MyFarm> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(
         'farmData', jsonData); // Save data in SharedPreferences
+  }
 
-    // Show a confirmation message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Farm data saved successfully!')),
+  void _showError(String message, String details) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text('$message\nDetails: $details'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
     );
-    _loadData();
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   // Method to skip and go back to previous screen
   void _skip() {
     widget.onPageChange(0);
   }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData(); // Load the data when the widget is initialized
-  }
-
-  // Method to load and print the saved data
-  Future<void> _loadData() async {
-    // Get SharedPreferences instance
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    // Get the saved JSON data (if it exists)
-    String? jsonData = prefs.getString('farmData');
-
-    // Print the raw JSON data to the console for debugging
-
-    print('Raw JSON Data: $jsonData');
-
-    // Decode the JSON data
-    Map<String, dynamic> decodedData = jsonDecode(jsonData!);
-
-    // Print the decoded data for debugging
-
-    print('Decoded Data: $decodedData');
-    /*
-      ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Farm data $decodedData')));*/
-    }
 
   @override
   Widget build(BuildContext context) {
@@ -120,502 +223,521 @@ class _MyFarmState extends State<MyFarm> {
         ),
         backgroundColor: AppColors.background,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Farm Details',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.grey,
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Farm Details',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.grey,
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 16.0,
+                      ),
+                      Column(
+                        children: [
+                          TextField(
+                            controller: _farmNameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Farm Name',
+                              hintText: 'Enter your farm name',
+                              floatingLabelStyle:
+                                  TextStyle(color: AppColors.secondary),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: AppColors.secondary),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: AppColors.secondary),
+                              ),
+                              border: OutlineInputBorder(
+                                  borderSide:
+                                      BorderSide(color: AppColors.secondary)),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          TextField(
+                            controller: _farmLocationController,
+                            decoration: const InputDecoration(
+                              labelText: 'Location',
+                              hintText: 'Enter your farm location',
+                              floatingLabelStyle:
+                                  TextStyle(color: AppColors.secondary),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: AppColors.secondary),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: AppColors.secondary),
+                              ),
+                              border: OutlineInputBorder(
+                                  borderSide:
+                                      BorderSide(color: AppColors.secondary)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(
-                  height: 16.0,
-                ),
-                Column(
-                  children: [
-                    TextField(
-                      controller: _farmNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Farm Name',
-                        hintText: 'Enter your farm name',
-                        floatingLabelStyle:
-                            TextStyle(color: AppColors.secondary),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.secondary),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.secondary),
-                        ),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.secondary)),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    TextField(
-                      controller: _farmLocationController,
-                      decoration: const InputDecoration(
-                        labelText: 'Location',
-                        hintText: 'Enter your farm location',
-                        floatingLabelStyle:
-                            TextStyle(color: AppColors.secondary),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.secondary),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.secondary),
-                        ),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.secondary)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(
-              height: 26,
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Farm Size',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.grey,
+                  const SizedBox(
+                    height: 26,
                   ),
-                ),
-                const SizedBox(
-                  height: 16.0,
-                ),
-                Column(
-                  children: [
-                    TextField(
-                      controller: _farmSizeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Farm Size',
-                        hintText: 'Enter your farm size',
-                        floatingLabelStyle:
-                            TextStyle(color: AppColors.secondary),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.secondary),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Farm Size',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.grey,
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.secondary),
-                        ),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.secondary)),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(
-              height: 26,
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Soil Details',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.grey,
+                      const SizedBox(
+                        height: 16.0,
+                      ),
+                      Column(
+                        children: [
+                          TextField(
+                            controller: _farmSizeController,
+                            decoration: const InputDecoration(
+                              labelText: 'Farm Size',
+                              hintText: 'Enter your farm size',
+                              floatingLabelStyle:
+                                  TextStyle(color: AppColors.secondary),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: AppColors.secondary),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: AppColors.secondary),
+                              ),
+                              border: OutlineInputBorder(
+                                  borderSide:
+                                      BorderSide(color: AppColors.secondary)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(
-                  height: 16.0,
-                ),
-                Column(
-                  children: [
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Soil Type',
-                        hintText: 'Choose your soil type',
-                        floatingLabelStyle:
-                            TextStyle(color: AppColors.secondary),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.secondary),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.secondary),
-                        ),
-                        border: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.secondary),
-                        ),
-                      ),
-                      dropdownColor: AppColors
-                          .secondary, // Background color for dropdown options
-                      style: const TextStyle(
-                        color: AppColors
-                            .grey, // Text color inside dropdown options
-                        fontSize: 16, // Font size for dropdown options
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'Sandy',
-                          child: Text(
-                            'Sandy',
-                            style:
-                                TextStyle(color: AppColors.grey), // Text color
-                          ),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Clay',
-                          child: Text(
-                            'Clay',
-                            style:
-                                TextStyle(color: AppColors.grey), // Text color
-                          ),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Loamy',
-                          child: Text(
-                            'Loamy',
-                            style:
-                                TextStyle(color: AppColors.grey), // Text color
-                          ),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        // Handle selection
-                        setState(() {
-                          _selectedSoilType = value!;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16.0),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Soil pH Level',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.grey,
+                  const SizedBox(
+                    height: 26,
                   ),
-                ),
-                const SizedBox(height: 8.0),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'pH Value:',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: AppColors.grey,
-                              ),
-                            ),
-                            Text(
-                              _pHValue.toStringAsFixed(1), // Display pH value
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.secondary,
-                              ),
-                            ),
-                          ],
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Soil Details',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.grey,
                         ),
-                        const SizedBox(height: 10),
-                        Slider(
-                          value: _pHValue,
-                          min: 0.0,
-                          max: 14.0,
-                          divisions: 70, // pH values range from 3.0 to 10.0
-                          activeColor: AppColors.secondary,
-                          inactiveColor: AppColors.grey,
-                          onChanged: (value) {
-                            setState(() {
-                              _pHValue = value;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(
-                  height: 26,
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Crop Focus',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.grey,
                       ),
-                    ),
-                    const SizedBox(
-                      height: 16.0,
-                    ),
-                    Column(
-                      children: [
-                        DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(
-                            labelText: 'Current Crop',
-                            hintText: 'Select crop you grow',
-                            floatingLabelStyle:
-                                TextStyle(color: AppColors.secondary),
-                            enabledBorder: OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: AppColors.secondary),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: AppColors.secondary),
-                            ),
-                            border: OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: AppColors.secondary),
-                            ),
-                          ),
-                          dropdownColor: AppColors
-                              .secondary, // Background color for dropdown options
-                          style: const TextStyle(
-                            color: AppColors
-                                .grey, // Text color inside dropdown options
-                            fontSize: 16, // Font size for dropdown options
-                          ),
-                          items: const [
-                            DropdownMenuItem(
-                              value: 'Maize',
-                              child: Text(
-                                'Maize',
-                                style: TextStyle(
-                                    color: AppColors.grey), // Text color
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 'Rice',
-                              child: Text(
-                                'Rice',
-                                style: TextStyle(
-                                    color: AppColors.grey), // Text color
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 'Beans',
-                              child: Text(
-                                'Beans',
-                                style: TextStyle(
-                                    color: AppColors.grey), // Text color
-                              ),
-                            ),
-                          ],
-                          onChanged: (value) {
-                            // Handle selection
-                            setState(() {
-                              _selectedCurrentCrop = value!;
-                            });
-                          },
-                        ),
-                        const SizedBox(
-                          height: 20,
-                        ),
-                        DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(
-                            labelText: 'Future Crop',
-                            hintText: 'Select crop you plan to grow',
-                            floatingLabelStyle:
-                                TextStyle(color: AppColors.secondary),
-                            enabledBorder: OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: AppColors.secondary),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: AppColors.secondary),
-                            ),
-                            border: OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: AppColors.secondary),
-                            ),
-                          ),
-                          dropdownColor: AppColors
-                              .secondary, // Background color for dropdown options
-                          style: const TextStyle(
-                            color: AppColors
-                                .grey, // Text color inside dropdown options
-                            fontSize: 16, // Font size for dropdown options
-                          ),
-                          items: const [
-                            DropdownMenuItem(
-                              value: 'Maize',
-                              child: Text(
-                                'Maize',
-                                style: TextStyle(
-                                    color: AppColors.grey), // Text color
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 'Rice',
-                              child: Text(
-                                'Rice',
-                                style: TextStyle(
-                                    color: AppColors.grey), // Text color
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 'Beans',
-                              child: Text(
-                                'Beans',
-                                style: TextStyle(
-                                    color: AppColors.grey), // Text color
-                              ),
-                            ),
-                          ],
-                          onChanged: (value) {
-                            // Handle selection
-                            setState(() {
-                              _selectedFutureCrop = value!;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 26.0),
-                    const Text(
-                      'Irrigation System',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.grey,
+                      const SizedBox(
+                        height: 16.0,
                       ),
-                    ),
-                    const SizedBox(height: 16.0),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        RadioListTile<String>(
-                          value: 'Manual',
-                          groupValue: _selectedIrrigation,
-                          title: const Text(
-                            'Manual',
-                            style: TextStyle(color: AppColors.grey),
+                      Column(
+                        children: [
+                          DropdownButtonFormField<String>(
+                            decoration: const InputDecoration(
+                              labelText: 'Soil Type',
+                              hintText: 'Choose your soil type',
+                              floatingLabelStyle:
+                                  TextStyle(color: AppColors.secondary),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: AppColors.secondary),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: AppColors.secondary),
+                              ),
+                              border: OutlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: AppColors.secondary),
+                              ),
+                            ),
+                            dropdownColor: AppColors
+                                .secondary, // Background color for dropdown options
+                            style: const TextStyle(
+                              color: AppColors
+                                  .grey, // Text color inside dropdown options
+                              fontSize: 16, // Font size for dropdown options
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'Sandy',
+                                child: Text(
+                                  'Sandy',
+                                  style: TextStyle(
+                                      color: AppColors.grey), // Text color
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Clay',
+                                child: Text(
+                                  'Clay',
+                                  style: TextStyle(
+                                      color: AppColors.grey), // Text color
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Loamy',
+                                child: Text(
+                                  'Loamy',
+                                  style: TextStyle(
+                                      color: AppColors.grey), // Text color
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              // Handle selection
+                              setState(() {
+                                _selectedSoilType = value!;
+                              });
+                            },
                           ),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedIrrigation = value!;
-                            });
-                          },
-                          activeColor: AppColors.secondary,
-                        ),
-                        RadioListTile<String>(
-                          value: 'Drip Irrigation',
-                          groupValue: _selectedIrrigation,
-                          title: const Text(
-                            'Drip Irrigation',
-                            style: TextStyle(color: AppColors.grey),
-                          ),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedIrrigation = value!;
-                            });
-                          },
-                          activeColor: AppColors.secondary,
-                        ),
-                        RadioListTile<String>(
-                          value: 'Sprinkler System',
-                          groupValue: _selectedIrrigation,
-                          title: const Text(
-                            'Sprinkler System',
-                            style: TextStyle(color: AppColors.grey),
-                          ),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedIrrigation = value!;
-                            });
-                          },
-                          activeColor: AppColors.secondary,
-                        ),
-                        RadioListTile<String>(
-                          value: 'Rain-fed',
-                          groupValue: _selectedIrrigation,
-                          title: const Text(
-                            'Rain-fed',
-                            style: TextStyle(color: AppColors.grey),
-                          ),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedIrrigation = value!;
-                            });
-                          },
-                          activeColor: AppColors.secondary,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 26.0),
-                    // Insight Section
-                    const Text(
-                      'Insight',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.grey,
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8.0),
-                    const Text(
-                      'Setting up your farm profile helps us provide tailored weather updates, crop recommendations, and market insight.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.grey,
+                    ],
+                  ),
+                  const SizedBox(height: 16.0),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Soil pH Level',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.grey,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 30.0),
-                    // Save and Skip Buttons
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        ElevatedButton(
-                          onPressed: _skip, // Skip functionality
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            backgroundColor: AppColors.grey,
+                      const SizedBox(height: 8.0),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'pH Value:',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: AppColors.grey,
+                                    ),
+                                  ),
+                                  Text(
+                                    _pHValue
+                                        .toStringAsFixed(1), // Display pH value
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.secondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Slider(
+                                value: _pHValue,
+                                min: 0.0,
+                                max: 14.0,
+                                divisions:
+                                    70, // pH values range from 3.0 to 10.0
+                                activeColor: AppColors.secondary,
+                                inactiveColor: AppColors.grey,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _pHValue = value;
+                                  });
+                                },
+                              ),
+                            ],
                           ),
-                          child: const Text('Skip'),
-                        ),
-                        ElevatedButton(
-                          onPressed: _saveData, // Save functionality
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            backgroundColor: AppColors.secondary,
+                        ],
+                      ),
+                      const SizedBox(
+                        height: 26,
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Crop Focus',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.grey,
+                            ),
                           ),
-                          child: const Text('Save'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
+                          const SizedBox(
+                            height: 16.0,
+                          ),
+                          Column(
+                            children: [
+                              DropdownButtonFormField<String>(
+                                decoration: const InputDecoration(
+                                  labelText: 'Current Crop',
+                                  hintText: 'Select crop you grow',
+                                  floatingLabelStyle:
+                                      TextStyle(color: AppColors.secondary),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide:
+                                        BorderSide(color: AppColors.secondary),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide:
+                                        BorderSide(color: AppColors.secondary),
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderSide:
+                                        BorderSide(color: AppColors.secondary),
+                                  ),
+                                ),
+                                dropdownColor: AppColors
+                                    .secondary, // Background color for dropdown options
+                                style: const TextStyle(
+                                  color: AppColors
+                                      .grey, // Text color inside dropdown options
+                                  fontSize:
+                                      16, // Font size for dropdown options
+                                ),
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'Maize',
+                                    child: Text(
+                                      'Maize',
+                                      style: TextStyle(
+                                          color: AppColors.grey), // Text color
+                                    ),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'Rice',
+                                    child: Text(
+                                      'Rice',
+                                      style: TextStyle(
+                                          color: AppColors.grey), // Text color
+                                    ),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'Beans',
+                                    child: Text(
+                                      'Beans',
+                                      style: TextStyle(
+                                          color: AppColors.grey), // Text color
+                                    ),
+                                  ),
+                                ],
+                                onChanged: (value) {
+                                  // Handle selection
+                                  setState(() {
+                                    _selectedCurrentCrop = value!;
+                                  });
+                                },
+                              ),
+                              const SizedBox(
+                                height: 20,
+                              ),
+                              DropdownButtonFormField<String>(
+                                decoration: const InputDecoration(
+                                  labelText: 'Future Crop',
+                                  hintText: 'Select crop you plan to grow',
+                                  floatingLabelStyle:
+                                      TextStyle(color: AppColors.secondary),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide:
+                                        BorderSide(color: AppColors.secondary),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide:
+                                        BorderSide(color: AppColors.secondary),
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderSide:
+                                        BorderSide(color: AppColors.secondary),
+                                  ),
+                                ),
+                                dropdownColor: AppColors
+                                    .secondary, // Background color for dropdown options
+                                style: const TextStyle(
+                                  color: AppColors
+                                      .grey, // Text color inside dropdown options
+                                  fontSize:
+                                      16, // Font size for dropdown options
+                                ),
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'Maize',
+                                    child: Text(
+                                      'Maize',
+                                      style: TextStyle(
+                                          color: AppColors.grey), // Text color
+                                    ),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'Rice',
+                                    child: Text(
+                                      'Rice',
+                                      style: TextStyle(
+                                          color: AppColors.grey), // Text color
+                                    ),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'Beans',
+                                    child: Text(
+                                      'Beans',
+                                      style: TextStyle(
+                                          color: AppColors.grey), // Text color
+                                    ),
+                                  ),
+                                ],
+                                onChanged: (value) {
+                                  // Handle selection
+                                  setState(() {
+                                    _selectedFutureCrop = value!;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 26.0),
+                          const Text(
+                            'Irrigation System',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 16.0),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              RadioListTile<String>(
+                                value: 'Manual',
+                                groupValue: _selectedIrrigation,
+                                title: const Text(
+                                  'Manual',
+                                  style: TextStyle(color: AppColors.grey),
+                                ),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedIrrigation = value!;
+                                  });
+                                },
+                                activeColor: AppColors.secondary,
+                              ),
+                              RadioListTile<String>(
+                                value: 'Drip Irrigation',
+                                groupValue: _selectedIrrigation,
+                                title: const Text(
+                                  'Drip Irrigation',
+                                  style: TextStyle(color: AppColors.grey),
+                                ),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedIrrigation = value!;
+                                  });
+                                },
+                                activeColor: AppColors.secondary,
+                              ),
+                              RadioListTile<String>(
+                                value: 'Sprinkler System',
+                                groupValue: _selectedIrrigation,
+                                title: const Text(
+                                  'Sprinkler System',
+                                  style: TextStyle(color: AppColors.grey),
+                                ),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedIrrigation = value!;
+                                  });
+                                },
+                                activeColor: AppColors.secondary,
+                              ),
+                              RadioListTile<String>(
+                                value: 'Rain-fed',
+                                groupValue: _selectedIrrigation,
+                                title: const Text(
+                                  'Rain-fed',
+                                  style: TextStyle(color: AppColors.grey),
+                                ),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedIrrigation = value!;
+                                  });
+                                },
+                                activeColor: AppColors.secondary,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 26.0),
+                          // Insight Section
+                          const Text(
+                            'Insight',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 8.0),
+                          const Text(
+                            'Setting up your farm profile helps us provide tailored weather updates, crop recommendations, and market insight.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 30.0),
+                          // Save and Skip Buttons
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              ElevatedButton(
+                                onPressed: _skip, // Skip functionality
+                                style: ElevatedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  backgroundColor: AppColors.grey,
+                                ),
+                                child: const Text('Skip'),
+                              ),
+                              ElevatedButton(
+                                onPressed: _saveData, // Save functionality
+                                style: ElevatedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  backgroundColor: AppColors.secondary,
+                                ),
+                                child: const Text('Save'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ]),
+              ),
             ),
-          ]),
-        ),
-      ),
     );
   }
 }
