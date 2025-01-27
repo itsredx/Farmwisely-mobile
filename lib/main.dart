@@ -58,7 +58,7 @@ class _MyAppState extends State<MyApp> {
                     child: Text(
                       'Farmwisely',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.grey,
                         fontSize: 24,
                       ),
                     ),

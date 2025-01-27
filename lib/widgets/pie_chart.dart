@@ -4,22 +4,22 @@ import 'package:flutter/material.dart';
 
 List<OrdinalData> ordinalDataList = [
   OrdinalData(
-    domain: 'A',
+    domain: 'ROI',
     measure: 60,
     color: Colors.blue,
   ),
   OrdinalData(
-    domain: 'B',
+    domain: 'Profit',
     measure: 25,
     color: Colors.cyan,
   ),
   OrdinalData(
-    domain: 'C',
+    domain: 'Operational Expenses',
     measure: 15,
     color: Colors.deepPurple,
   ),
   OrdinalData(
-    domain: 'D',
+    domain: 'Capital',
     measure: 40,
     color: Colors.amber,
   ),
