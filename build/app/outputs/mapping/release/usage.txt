@@ -11234,6 +11234,14 @@ com.baseflow.geolocator.permission.PermissionUtils:
     public void <init>()
 com.baseflow.geolocator.utils.Utils:
     public void <init>()
+com.baseflow.permissionhandler.PermissionConstants$PermissionGroup
+com.baseflow.permissionhandler.PermissionConstants$PermissionStatus
+com.baseflow.permissionhandler.PermissionConstants$ServiceStatus
+com.baseflow.permissionhandler.PermissionConstants
+com.baseflow.permissionhandler.PermissionUtils:
+    static final java.lang.String SHARED_PREFERENCES_PERMISSION_WAS_DENIED_BEFORE_KEY
+    public void <init>()
+com.baseflow.permissionhandler.R
 com.example.myapp.R$drawable
 com.example.myapp.R$mipmap
 com.example.myapp.R$style
@@ -22664,6 +22672,8 @@ androidx.window.layout.adapter.sidecar.SidecarCompat:
     private static final void registerConfigurationChangeListener$lambda$0(androidx.window.layout.adapter.sidecar.SidecarCompat,android.app.Activity,android.content.res.Configuration)
 com.baseflow.geolocator.location.LocationClient:
     public abstract boolean checkLocationService(android.content.Context)
+com.baseflow.permissionhandler.ServiceManager:
+    private static boolean isLocationServiceEnablePreKitKat(android.content.Context)
 com.google.android.gms.auth.api.signin.GoogleSignInAccount:
     public android.accounts.Account getAccount()
 com.google.android.gms.common.GoogleApiAvailability$$InternalSyntheticThrowCCEIfNotNull$9$a5d5535e3840a61ededf0bbe9570d017b04eacc8e45d55c060e99e661c3805fe$0

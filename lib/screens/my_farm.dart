@@ -3,6 +3,7 @@
 import 'dart:convert'; // For JSON encoding
 import 'package:farmwisely/utils/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart'; // Import the permission_handler package
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
@@ -46,6 +47,7 @@ class _MyFarmState extends State<MyFarm> {
         _token = token;
         _userId = userId;
         _loadData();
+        _isLoading = false;
       });
     } else {
       setState(() {
@@ -54,7 +56,7 @@ class _MyFarmState extends State<MyFarm> {
     }
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadFarmId() async {
     try {
       final response = await http.get(
         Uri.parse('https://devred.pythonanywhere.com/api/farms/'),
@@ -62,11 +64,45 @@ class _MyFarmState extends State<MyFarm> {
           'Authorization': 'Token $_token',
         },
       );
-
       if (response.statusCode == 200) {
         final List<dynamic> farmDataList = json.decode(response.body);
         if (farmDataList.isNotEmpty) {
           Map<String, dynamic> decodedData = farmDataList[0];
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('farmId', decodedData['id']); //store the farmId
+        }
+      } else {
+        _showError('Error loading data', response.body);
+      }
+    } catch (e) {
+      _showError('Error loading data', e.toString());
+    }
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true; // Start loading
+    });
+
+    //_loadFarmId();
+
+    try {
+      // First, try to get the farm ID from the shared preferences.
+      final prefs = await SharedPreferences.getInstance();
+      final int? farmId = prefs.getInt('farmId');
+
+      if (farmId != null) {
+        // Check if farmId exists if yes then fetch the data else set isloading to false
+        final response = await http.get(
+          Uri.parse(
+              'https://devred.pythonanywhere.com/api/farms/$farmId/'), // Use the farm_id here
+          headers: {
+            'Authorization': 'Token $_token',
+          },
+        );
+
+        if (response.statusCode == 200) {
+          final Map<String, dynamic> decodedData = json.decode(response.body);
           setState(() {
             _farmNameController.text = decodedData['farmName'] ?? '';
             _farmLocationController.text = decodedData['farmLocation'] ?? '';
@@ -78,9 +114,15 @@ class _MyFarmState extends State<MyFarm> {
             _selectedIrrigation = decodedData['irrigationSystem'] ?? 'Manual';
             _isLoading = false;
           });
+        } else {
+          _showError('Error loading data ID: $farmId', response.body);
+          setState(() {
+            _isLoading = false;
+          });
         }
       } else {
-        _showError('Error loading data', response.body);
+        _showError(
+            'Error loading data', 'No farm data found in shared preferences.');
         setState(() {
           _isLoading = false;
         });
@@ -93,50 +135,70 @@ class _MyFarmState extends State<MyFarm> {
     }
   }
 
-Future<void> _saveData() async {
-        setState(() {
-            _isLoading = true;
-        });
+  Future<void> _saveData() async {
+    setState(() {
+      _isLoading = true;
+    });
     try {
-         Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-            final response = await http.post(
-                 Uri.parse('https://devred.pythonanywhere.com/api/farms/'),
-                 headers: {
-                     'Authorization': 'Token $_token',
-                       'Content-Type': 'application/json',
-                  },
-                body: json.encode({
-                 'farmName': _farmNameController.text,
-                   'farmLocation': _farmLocationController.text,
-                   'farmSize': _farmSizeController.text,
-                    'soilType': _selectedSoilType,
-                  'pHValue': _pHValue,
-                    'currentCrop': _selectedCurrentCrop,
-                   'futureCrop': _selectedFutureCrop,
-                   'irrigationSystem': _selectedIrrigation,
-                  'latitude': position.latitude,
-                 'longitude': position.longitude,
-               }),
-             );
+      // Check location permission before getting position
+      final permissionStatus = await Permission.location.request();
+      if (permissionStatus.isGranted) {
+        Position position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high);
+        final response = await http.post(
+          Uri.parse('https://devred.pythonanywhere.com/api/farms/'),
+          headers: {
+            'Authorization': 'Token $_token',
+            'Content-Type': 'application/json',
+          },
+          body: json.encode({
+            'farmName': _farmNameController.text,
+            'farmLocation': _farmLocationController.text,
+            'farmSize': _farmSizeController.text,
+            'soilType': _selectedSoilType,
+            'pHValue': _pHValue,
+            'currentCrop': _selectedCurrentCrop,
+            'futureCrop': _selectedFutureCrop,
+            'irrigationSystem': _selectedIrrigation,
+            'latitude': position.latitude,
+            'longitude': position.longitude,
+          }),
+        );
 
-            if (response.statusCode == 201) {
-                  _showSuccess("farm data saved successfully");
-                _loadData(); //reload data to update the list.
-               _saveLocalData(); // save in shared preferences
-            } else {
-              _showError("Error", response.body);
-                setState(() {
-                   _isLoading = false;
-                 });
-             }
-     } catch (e) {
-          _showError("Error:", e.toString());
+        if (response.statusCode == 201) {
+          _showSuccess("farm data saved successfully");
+          final Map<String, dynamic> responseData =
+              json.decode(response.body); //decode the response
+          if (responseData
+              .containsKey('id')) //check if the response body has a key id
+          {
+            await _saveLocalData(responseData[
+                'id']); // save the farm id to local preferences using the same function
+          }
+
+          _loadData();
+        } else {
+          _showError("Error", response.body);
           setState(() {
-               _isLoading = false;
-           });
-     }
-}
-  Future<void> _saveLocalData() async {
+            _isLoading = false;
+          });
+        }
+      } else {
+        //Permission not granted
+        _showError("Error", 'Location permission not granted');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      _showError("Error:", e.toString());
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _saveLocalData(int farmId) async {
     // Get text from the TextField
     String farmName = _farmNameController.text;
     String farmLocation = _farmLocationController.text;
@@ -144,6 +206,7 @@ Future<void> _saveData() async {
 
     // Prepare data
     final Map<String, dynamic> farmData = {
+      'id': farmId, // include the farm id from the server
       'farmName': farmName, // Add farm name from TextField to JSON
       'farmLocation': farmLocation,
       'farmSize': farmSize,

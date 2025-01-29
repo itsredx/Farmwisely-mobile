@@ -128,7 +128,7 @@ class _SettingsState extends State<Settings> {
                 'cropGrowthUpdates': _cropGrowthUpdates,
                 'farmTaskReminders': _farmTaskReminders,
             };
-            var request = http.MultipartRequest('PATCH', Uri.parse('https://devred.pythonanywhere.com/api/profiles/profile/'));
+            var request = http.MultipartRequest('PATCH', Uri.parse('https://devred.pythonanywhere.com/api/profile/'));
             request.headers['Authorization'] = 'Token $_token';
               request.fields.addAll({
                  'name': _nameController.text,

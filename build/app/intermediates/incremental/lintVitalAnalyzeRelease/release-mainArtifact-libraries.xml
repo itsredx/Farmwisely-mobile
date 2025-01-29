@@ -43,6 +43,19 @@
       externalAnnotations="annotations.zip"
       proguardRules="proguard.txt"/>
   <library
+      name="/home/user/myapp/android@@:permission_handler_android::release"
+      jars="/home/user/myapp/build/permission_handler_android/.transforms/abc415ae1c0ee93b8dafe840be199962/transformed/out/jars/classes.jar:/home/user/myapp/build/permission_handler_android/.transforms/abc415ae1c0ee93b8dafe840be199962/transformed/out/jars/libs/R.jar"
+      resolved="com.baseflow.permissionhandler:permission_handler_android:unspecified"
+      folder="/home/user/myapp/build/permission_handler_android/.transforms/abc415ae1c0ee93b8dafe840be199962/transformed/out"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
       name="/home/user/myapp/android@@:shared_preferences_android::release"
       jars="/home/user/myapp/build/shared_preferences_android/.transforms/eba8b4729fdf38d3834f3410022dc7cb/transformed/out/jars/classes.jar:/home/user/myapp/build/shared_preferences_android/.transforms/eba8b4729fdf38d3834f3410022dc7cb/transformed/out/jars/libs/R.jar"
       resolved="io.flutter.plugins.sharedpreferences:shared_preferences_android:unspecified"
