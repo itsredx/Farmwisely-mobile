@@ -93,9 +93,9 @@ class _LoginScreenState extends State<LoginScreen>
         await prefs.setString('token', token); // store the token
         await prefs.setInt('userId', userId); // store the user id
         _showSuccess("Logged in Successfully");
-        _loadToken();
-        _loadFarmId();
-        _loadData();
+        //_loadToken();
+        //_loadFarmId();
+        //_loadData();
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -144,8 +144,8 @@ class _LoginScreenState extends State<LoginScreen>
         await prefs.setString('token', token); // store the token
         await prefs.setInt('userId', userId); // store the user id
         _showSuccess("Signed Up Successfully");
-        _loadToken();
-        _saveData();
+        //_loadToken();
+        //_saveData();
         Navigator.pushReplacement(
             context,
             MaterialPageRoute(
