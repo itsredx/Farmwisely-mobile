@@ -3,7 +3,7 @@
 import 'dart:convert'; // For JSON encoding
 import 'package:farmwisely/utils/colors.dart';
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart'; // Import the permission_handler package
+// Import the permission_handler package
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
@@ -136,94 +136,80 @@ class _MyFarmState extends State<MyFarm> {
   }
 
   Future<void> _saveData() async {
-    setState(() {
-      _isLoading = true;
-    });
-    try {
-      // Check location permission before getting position
-      final permissionStatus = await Permission.location.request();
-      if (permissionStatus.isGranted) {
-        Position position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high);
-        final response = await http.post(
-          Uri.parse('https://devred.pythonanywhere.com/api/farms/'),
-          headers: {
-            'Authorization': 'Token $_token',
-            'Content-Type': 'application/json',
-          },
-          body: json.encode({
-            'farmName': _farmNameController.text,
-            'farmLocation': _farmLocationController.text,
-            'farmSize': _farmSizeController.text,
-            'soilType': _selectedSoilType,
-            'pHValue': _pHValue,
-            'currentCrop': _selectedCurrentCrop,
-            'futureCrop': _selectedFutureCrop,
-            'irrigationSystem': _selectedIrrigation,
-            'latitude': position.latitude,
-            'longitude': position.longitude,
-          }),
-        );
-
-        if (response.statusCode == 201) {
-          _showSuccess("farm data saved successfully");
-          final Map<String, dynamic> responseData =
-              json.decode(response.body); //decode the response
-          if (responseData
-              .containsKey('id')) //check if the response body has a key id
-          {
-            await _saveLocalData(responseData[
-                'id']); // save the farm id to local preferences using the same function
-          }
-
-          _loadData();
-        } else {
-          _showError("Error", response.body);
-          setState(() {
-            _isLoading = false;
-          });
-        }
-      } else {
-        //Permission not granted
-        _showError("Error", 'Location permission not granted');
         setState(() {
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      _showError("Error:", e.toString());
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
+            _isLoading = true;
+         });
+    try {
+        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+         final response = await http.post(
+             Uri.parse('https://devred.pythonanywhere.com/api/farms/'),
+             headers: {
+                'Authorization': 'Token $_token',
+                  'Content-Type': 'application/json',
+              },
+              body: json.encode({
+                  'farmName': _farmNameController.text,
+                   'farmLocation': _farmLocationController.text,
+                   'farmSize': _farmSizeController.text,
+                  'soilType': _selectedSoilType,
+                  'pHValue': _pHValue,
+                   'currentCrop': _selectedCurrentCrop,
+                   'futureCrop': _selectedFutureCrop,
+                    'irrigationSystem': _selectedIrrigation,
+                    'latitude': position.latitude,
+                    'longitude': position.longitude,
+                }),
+            );
+
+          if (response.statusCode == 201) {
+                _showSuccess("farm data saved successfully");
+               _loadData(); //reload data to update the list.
+              final Map<String, dynamic> responseData =
+                     json.decode(response.body); //decode the response
+               if (responseData.containsKey('id')) {
+                    await _saveLocalData(responseData['id']);
+               }
+            } else {
+                 _showError("Error", response.body);
+                  setState(() {
+                     _isLoading = false;
+                  });
+           }
+      } catch (e) {
+            _showError("Error:", e.toString());
+              setState(() {
+                _isLoading = false;
+              });
+     }
+}
 
   Future<void> _saveLocalData(int farmId) async {
-    // Get text from the TextField
+     // Get text from the TextField
     String farmName = _farmNameController.text;
     String farmLocation = _farmLocationController.text;
-    String farmSize = _farmSizeController.text;
+     String farmSize = _farmSizeController.text;
 
-    // Prepare data
-    final Map<String, dynamic> farmData = {
-      'id': farmId, // include the farm id from the server
-      'farmName': farmName, // Add farm name from TextField to JSON
-      'farmLocation': farmLocation,
-      'farmSize': farmSize,
-      'soilType': _selectedSoilType, // Add soil type from dropdown to JSON
-      'pHValue': _pHValue,
-      'currentCrop': _selectedCurrentCrop,
-      'futureCrop': _selectedFutureCrop,
-      'irrigationSystem': _selectedIrrigation,
-    };
+      // Prepare data
+     final Map<String, dynamic> farmData = {
+         'id': farmId, // include the farm id from the server
+        'farmName': farmName, // Add farm name from TextField to JSON
+        'farmLocation': farmLocation,
+         'farmSize': farmSize,
+         'soilType': _selectedSoilType, // Add soil type from dropdown to JSON
+         'pHValue': _pHValue,
+       'currentCrop': _selectedCurrentCrop,
+          'futureCrop': _selectedFutureCrop,
+       'irrigationSystem': _selectedIrrigation,
+     };
 
-    // Encode data to JSON
-    String jsonData = jsonEncode(farmData);
+       // Encode data to JSON
+     String jsonData = jsonEncode(farmData);
 
-    // Get SharedPreferences instance
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
+      // Get SharedPreferences instance
+   SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
         'farmData', jsonData); // Save data in SharedPreferences
+  await prefs.setInt('farmId', farmId); //save farm id here // Save data in SharedPreferences
   }
 
   void _showError(String message, String details) {
