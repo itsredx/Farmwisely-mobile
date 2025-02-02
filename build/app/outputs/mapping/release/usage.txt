@@ -11245,6 +11245,7 @@ com.baseflow.permissionhandler.R
 com.example.myapp.R$drawable
 com.example.myapp.R$mipmap
 com.example.myapp.R$style
+com.example.myapp.R$xml
 com.example.myapp.R
 com.google.android.gms.actions.ItemListIntents
 com.google.android.gms.actions.NoteIntents

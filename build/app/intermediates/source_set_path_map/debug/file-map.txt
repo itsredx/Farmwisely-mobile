@@ -45,4 +45,5 @@ com.example.myapp-merged_res-43 /home/user/myapp/build/app/intermediates/merged_
 com.example.myapp-packaged_res-44 /home/user/myapp/build/flutter_plugin_android_lifecycle/intermediates/packaged_res/debug
 com.example.myapp-packaged_res-45 /home/user/myapp/build/geolocator_android/intermediates/packaged_res/debug
 com.example.myapp-packaged_res-46 /home/user/myapp/build/image_picker_android/intermediates/packaged_res/debug
-com.example.myapp-packaged_res-47 /home/user/myapp/build/shared_preferences_android/intermediates/packaged_res/debug
+com.example.myapp-packaged_res-47 /home/user/myapp/build/permission_handler_android/intermediates/packaged_res/debug
+com.example.myapp-packaged_res-48 /home/user/myapp/build/shared_preferences_android/intermediates/packaged_res/debug

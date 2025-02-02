@@ -25,9 +25,9 @@ class _MyFarmState extends State<MyFarm> {
       TextEditingController(); // Controller for TextField
   TextEditingController _farmSizeController =
       TextEditingController(); // Controller for TextField
-  String _selectedSoilType = 'Sandy'; // Default soil type
-  String _selectedCurrentCrop = 'Maize'; // Default current crop
-  String _selectedFutureCrop = 'Beans';
+  String _selectedSoilType = 'Choose your soil type'; // Default soil type
+  String _selectedCurrentCrop = 'Choose your current crop'; // Default current crop
+  String _selectedFutureCrop = 'Choose your future crop';
   bool _isLoading = true;
   String? _token;
   int? _userId;
@@ -79,12 +79,10 @@ class _MyFarmState extends State<MyFarm> {
     }
   }
 
-  Future<void> _loadData() async {
+   Future<void> _loadData() async {
     setState(() {
       _isLoading = true; // Start loading
     });
-
-    //_loadFarmId();
 
     try {
       // First, try to get the farm ID from the shared preferences.
@@ -102,114 +100,142 @@ class _MyFarmState extends State<MyFarm> {
         );
 
         if (response.statusCode == 200) {
-          final Map<String, dynamic> decodedData = json.decode(response.body);
+          final Map<String, dynamic> decodedData = json.decode(response.body); // Now we are expecting a map and not a list
+             setState(() {
+                  _farmNameController.text = decodedData['farmName'] ?? '';
+                  _farmLocationController.text = decodedData['farmLocation'] ?? '';
+                  _farmSizeController.text = decodedData['farmSize'] ?? '';
+                  _selectedSoilType = decodedData['soilType'] ?? 'Sandy';
+                   _pHValue = decodedData['pHValue'] ?? 7.0;
+                   _selectedCurrentCrop = decodedData['currentCrop'] ?? 'Maize';
+                  _selectedFutureCrop = decodedData['futureCrop'] ?? 'Beans';
+                   _selectedIrrigation = decodedData['irrigationSystem'] ?? 'Manual';
+                 _isLoading = false;
+               });
+          } else {
+                await _loadLocalData();
+            _showError('Error loading data', response.body);
+           setState(() {
+              _isLoading = false;
+            });
+         }
+      } else {
+          await _loadLocalData();
+          _showError(
+            'Error loading data', 'No farm data found in shared preferences.');
           setState(() {
-            _farmNameController.text = decodedData['farmName'] ?? '';
-            _farmLocationController.text = decodedData['farmLocation'] ?? '';
-            _farmSizeController.text = decodedData['farmSize'] ?? '';
-            _selectedSoilType = decodedData['soilType'] ?? 'Sandy';
-            _pHValue = decodedData['pHValue'] ?? 7.0;
-            _selectedCurrentCrop = decodedData['currentCrop'] ?? 'Maize';
-            _selectedFutureCrop = decodedData['futureCrop'] ?? 'Beans';
-            _selectedIrrigation = decodedData['irrigationSystem'] ?? 'Manual';
-            _isLoading = false;
+           _isLoading = false;
           });
-        } else {
-          _showError('Error loading data ID: $farmId', response.body);
-          setState(() {
-            _isLoading = false;
-          });
+       }
+  } catch (e) {
+      await _loadLocalData();
+    _showError('Error loading data', e.toString());
+      setState(() {
+          _isLoading = false;
+       });
+ }
+  }
+
+  Future<void> _loadLocalData() async {
+    // Get SharedPreferences instance
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Get the saved JSON data (if it exists)
+    String? jsonData = prefs.getString('farmData');
+
+    // Print the raw JSON data to the console for debugging
+    // Decode the JSON data
+    Map<String, dynamic> decodedData = jsonDecode(jsonData!);
+    setState(() {
+      _farmNameController.text = decodedData['farmName'] ?? '';
+      _farmLocationController.text = decodedData['farmLocation'] ?? '';
+      _farmSizeController.text = decodedData['farmSize'] ?? '';
+      _selectedSoilType = decodedData['soilType'] ?? 'Sandy';
+      _pHValue = decodedData['pHValue'] ?? 7.0;
+      _selectedCurrentCrop = decodedData['currentCrop'] ?? 'Maize';
+      _selectedFutureCrop = decodedData['futureCrop'] ?? 'Beans';
+      _selectedIrrigation = decodedData['irrigationSystem'] ?? 'Manual';
+      _isLoading = false;
+    });
+    }
+
+  Future<void> _saveData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+      final response = await http.post(
+        Uri.parse('https://devred.pythonanywhere.com/api/farms/'),
+        headers: {
+          'Authorization': 'Token $_token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'farmName': _farmNameController.text,
+          'farmLocation': _farmLocationController.text,
+          'farmSize': _farmSizeController.text,
+          'soilType': _selectedSoilType,
+          'pHValue': _pHValue,
+          'currentCrop': _selectedCurrentCrop,
+          'futureCrop': _selectedFutureCrop,
+          'irrigationSystem': _selectedIrrigation,
+          'latitude': position.latitude,
+          'longitude': position.longitude,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        _showSuccess("farm data saved successfully");
+        _loadData(); //reload data to update the list.
+        final Map<String, dynamic> responseData =
+            json.decode(response.body); //decode the response
+        if (responseData.containsKey('id')) {
+          await _saveLocalData(responseData['id']);
         }
       } else {
-        _showError(
-            'Error loading data', 'No farm data found in shared preferences.');
+        _showError("Error", response.body);
         setState(() {
           _isLoading = false;
         });
       }
     } catch (e) {
-      _showError('Error loading data', e.toString());
+      _showError("Error:", e.toString());
       setState(() {
         _isLoading = false;
       });
     }
   }
 
-  Future<void> _saveData() async {
-        setState(() {
-            _isLoading = true;
-         });
-    try {
-        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-         final response = await http.post(
-             Uri.parse('https://devred.pythonanywhere.com/api/farms/'),
-             headers: {
-                'Authorization': 'Token $_token',
-                  'Content-Type': 'application/json',
-              },
-              body: json.encode({
-                  'farmName': _farmNameController.text,
-                   'farmLocation': _farmLocationController.text,
-                   'farmSize': _farmSizeController.text,
-                  'soilType': _selectedSoilType,
-                  'pHValue': _pHValue,
-                   'currentCrop': _selectedCurrentCrop,
-                   'futureCrop': _selectedFutureCrop,
-                    'irrigationSystem': _selectedIrrigation,
-                    'latitude': position.latitude,
-                    'longitude': position.longitude,
-                }),
-            );
-
-          if (response.statusCode == 201) {
-                _showSuccess("farm data saved successfully");
-               _loadData(); //reload data to update the list.
-              final Map<String, dynamic> responseData =
-                     json.decode(response.body); //decode the response
-               if (responseData.containsKey('id')) {
-                    await _saveLocalData(responseData['id']);
-               }
-            } else {
-                 _showError("Error", response.body);
-                  setState(() {
-                     _isLoading = false;
-                  });
-           }
-      } catch (e) {
-            _showError("Error:", e.toString());
-              setState(() {
-                _isLoading = false;
-              });
-     }
-}
-
   Future<void> _saveLocalData(int farmId) async {
-     // Get text from the TextField
+    // Get text from the TextField
     String farmName = _farmNameController.text;
     String farmLocation = _farmLocationController.text;
-     String farmSize = _farmSizeController.text;
+    String farmSize = _farmSizeController.text;
 
-      // Prepare data
-     final Map<String, dynamic> farmData = {
-         'id': farmId, // include the farm id from the server
-        'farmName': farmName, // Add farm name from TextField to JSON
-        'farmLocation': farmLocation,
-         'farmSize': farmSize,
-         'soilType': _selectedSoilType, // Add soil type from dropdown to JSON
-         'pHValue': _pHValue,
-       'currentCrop': _selectedCurrentCrop,
-          'futureCrop': _selectedFutureCrop,
-       'irrigationSystem': _selectedIrrigation,
-     };
+    // Prepare data
+    final Map<String, dynamic> farmData = {
+      'id': farmId, // include the farm id from the server
+      'farmName': farmName, // Add farm name from TextField to JSON
+      'farmLocation': farmLocation,
+      'farmSize': farmSize,
+      'soilType': _selectedSoilType, // Add soil type from dropdown to JSON
+      'pHValue': _pHValue,
+      'currentCrop': _selectedCurrentCrop,
+      'futureCrop': _selectedFutureCrop,
+      'irrigationSystem': _selectedIrrigation,
+    };
 
-       // Encode data to JSON
-     String jsonData = jsonEncode(farmData);
+    // Encode data to JSON
+    String jsonData = jsonEncode(farmData);
 
-      // Get SharedPreferences instance
-   SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
+    // Get SharedPreferences instance
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
         'farmData', jsonData); // Save data in SharedPreferences
-  await prefs.setInt('farmId', farmId); //save farm id here // Save data in SharedPreferences
+    await prefs.setInt(
+        'farmId', farmId); //save farm id here // Save data in SharedPreferences
   }
 
   void _showError(String message, String details) {
@@ -402,20 +428,20 @@ class _MyFarmState extends State<MyFarm> {
                       Column(
                         children: [
                           DropdownButtonFormField<String>(
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Soil Type',
-                              hintText: 'Choose your soil type',
+                              hintText: _selectedSoilType,
                               floatingLabelStyle:
-                                  TextStyle(color: AppColors.secondary),
-                              enabledBorder: OutlineInputBorder(
+                                  const TextStyle(color: AppColors.secondary),
+                              enabledBorder: const OutlineInputBorder(
                                 borderSide:
                                     BorderSide(color: AppColors.secondary),
                               ),
-                              focusedBorder: OutlineInputBorder(
+                              focusedBorder: const OutlineInputBorder(
                                 borderSide:
                                     BorderSide(color: AppColors.secondary),
                               ),
-                              border: OutlineInputBorder(
+                              border: const OutlineInputBorder(
                                 borderSide:
                                     BorderSide(color: AppColors.secondary),
                               ),
@@ -544,9 +570,9 @@ class _MyFarmState extends State<MyFarm> {
                           Column(
                             children: [
                               DropdownButtonFormField<String>(
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Current Crop',
-                                  hintText: 'Select crop you grow',
+                                  hintText: _selectedCurrentCrop,
                                   floatingLabelStyle:
                                       TextStyle(color: AppColors.secondary),
                                   enabledBorder: OutlineInputBorder(
@@ -607,9 +633,9 @@ class _MyFarmState extends State<MyFarm> {
                                 height: 20,
                               ),
                               DropdownButtonFormField<String>(
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Future Crop',
-                                  hintText: 'Select crop you plan to grow',
+                                  hintText: _selectedFutureCrop,
                                   floatingLabelStyle:
                                       TextStyle(color: AppColors.secondary),
                                   enabledBorder: OutlineInputBorder(

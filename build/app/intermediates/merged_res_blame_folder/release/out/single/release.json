@@ -712,6 +712,10 @@
         "source": "com.example.myapp-appcompat-1.1.0-2:/drawable-mdpi-v4/abc_list_divider_mtrl_alpha.9.png"
     },
     {
+        "merged": "com.example.myapp-merged_res-44:/xml_network_security_config.xml.flat",
+        "source": "com.example.myapp-main-37:/xml/network_security_config.xml"
+    },
+    {
         "merged": "com.example.myapp-merged_res-44:/drawable-hdpi-v4_abc_ic_star_half_black_16dp.png.flat",
         "source": "com.example.myapp-appcompat-1.1.0-2:/drawable-hdpi-v4/abc_ic_star_half_black_16dp.png"
     },
