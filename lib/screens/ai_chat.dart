@@ -166,7 +166,7 @@ Future<void> _loadFarmProfile() async {
         final int? _farmId = prefs.getInt('farmId');
         final response = await http.post(
           Uri.parse(
-              'https://devred.pythonanywhere.com/api/chat/$_farmId/'), // added the farm id
+              'https://devred.pythonanywhere.com/api/chat/view/$_farmId/'), // added the farm id
           headers: {
             'Authorization': 'Token $_token',
             'Content-Type': 'application/json',
@@ -196,7 +196,7 @@ Future<void> _loadFarmProfile() async {
 
   void _handleDrawerItemTap(int chatHistoryId) async {
     try {
-      final response = await http.post(
+      final response = await http.get(
         Uri.parse(
             'https://devred.pythonanywhere.com/api/chat/$chatHistoryId/'), // send the id of the selected chat history
         headers: {
