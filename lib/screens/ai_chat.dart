@@ -80,31 +80,45 @@ class _AiChatScreenState extends State<AiChatScreen> {
     }
   }
 
-  Future<void> _loadFarmProfile() async {
-    try {
-      final response = await http.get(
-        Uri.parse('https://devred.pythonanywhere.com/api/farms/'),
-        headers: {
-          'Authorization': 'Token $_token',
-        },
-      );
+Future<void> _loadFarmProfile() async {
+  try {
+    final response = await http.get(
+      Uri.parse('https://devred.pythonanywhere.com/api/farms/'),
+      headers: {
+        'Authorization': 'Token $_token',
+      },
+    );
 
-      if (response.statusCode == 200) {
-        final List<dynamic> farmDataList = json.decode(response.body);
-        if (farmDataList.isNotEmpty) {
-          Map<String, dynamic> decodedData = farmDataList[0];
+    if (response.statusCode == 200) {
+      final List<dynamic> farmDataList = json.decode(response.body);
+      if (farmDataList.isNotEmpty) {
+        Map<String, dynamic> decodedData = farmDataList[0];
+        _farmProfile = FarmProfileModel.fromJson(decodedData);
 
-          _farmProfile = FarmProfileModel.fromJson(decodedData);
+        // ----> Get the ID directly from the loaded profile <----
+        setState(() { // Use setState if UI depends on _farmId immediately
+           _farmId = _farmProfile?.id; // Assuming FarmProfileModel has an 'id' property of type int?
+        });
+
+
+        // ----> Optional: Save to SharedPreferences if needed elsewhere <----
+        if (_farmId != null) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('farmId', _farmId!); // Save the loaded ID
+        } else {
+           _showError('Farm ID Error', 'Could not retrieve farm ID from the loaded profile.');
         }
-        final prefs = await SharedPreferences.getInstance();
-        final int? _farmId = prefs.getInt('farmId');
+
       } else {
-        _showError('Error loading data', response.body);
+        _showError('No Farms Found', 'No farm profiles associated with this user.');
       }
-    } catch (e) {
-      _showError('Error loading data', e.toString());
+    } else {
+      _showError('Error loading farm data', response.body);
     }
+  } catch (e) {
+    _showError('Error loading farm data', e.toString());
   }
+}
 
   Future<void> _loadChatHistories() async {
     try {
@@ -130,6 +144,11 @@ class _AiChatScreenState extends State<AiChatScreen> {
   Future<void> _sendMessage() async {
     if (_controller.text.trim().isNotEmpty && !_isThinkingNotifier.value) {
       final String userMessage = _controller.text.trim();
+      if (_farmId == null) {
+       _showError('Error', 'Farm ID is missing. Cannot send message. Please try reloading.');
+       _isThinkingNotifier.value = false; // Ensure loading indicator stops
+       return; // Don't proceed
+    }
       _isThinkingNotifier.value = true;
       final String title = _isNewChat
           ? userMessage
@@ -182,6 +201,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
             'https://devred.pythonanywhere.com/api/chat/$chatHistoryId/'), // send the id of the selected chat history
         headers: {
           'Authorization': 'Token $_token',
+          'Content-Type': 'application/json',
         },
       );
       if (response.statusCode == 200) {

@@ -56,6 +56,7 @@ class _MyFarmState extends State<MyFarm> {
     }
   }
 
+  // ignore: unused_element
   Future<void> _loadFarmId() async {
     try {
       final response = await http.get(

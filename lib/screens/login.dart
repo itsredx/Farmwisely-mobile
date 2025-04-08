@@ -11,6 +11,7 @@ class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _LoginScreenState createState() => _LoginScreenState();
 }
 
@@ -23,6 +24,7 @@ class _LoginScreenState extends State<LoginScreen>
   bool _isLoading = false;
   late TabController _tabController; // Added the tab controller
   String? _token;
+  // ignore: unused_field
   int? _userId;
   @override
   void initState() {
@@ -97,6 +99,7 @@ class _LoginScreenState extends State<LoginScreen>
         //_loadFarmId();
         //_loadData();
         Navigator.pushReplacement(
+          // ignore: use_build_context_synchronously
           context,
           MaterialPageRoute(
             builder: (context) => const MyApp(
@@ -147,6 +150,7 @@ class _LoginScreenState extends State<LoginScreen>
         _loadToken();
         //_saveData();
         Navigator.pushReplacement(
+            // ignore: use_build_context_synchronously
             context,
             MaterialPageRoute(
                 builder: (context) => const MyApp(
@@ -182,6 +186,7 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+  // ignore: unused_element
   Future<void> _loadFarmId() async {
     try {
       final response = await http.get(
@@ -205,6 +210,7 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+   // ignore: unused_element
    Future<void> _loadData() async {
     setState(() {
         _isLoading = true; // Start loading
@@ -253,6 +259,7 @@ class _LoginScreenState extends State<LoginScreen>
        }
   }
 
+  // ignore: unused_element
   Future<void> _saveData() async {
     setState(() {
       _isLoading = true;
@@ -261,7 +268,9 @@ class _LoginScreenState extends State<LoginScreen>
       // Check location permission before getting position
       final permissionStatus = await Permission.location.request();
       if (permissionStatus.isGranted) {
+        // ignore: unused_local_variable
         Position position = await Geolocator.getCurrentPosition(
+            // ignore: deprecated_member_use
             desiredAccuracy: LocationAccuracy.high);
         final response = await http.post(
           Uri.parse('https://devred.pythonanywhere.com/api/farms/'),
