@@ -2,6 +2,8 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:farmwisely/main.dart'; // Import MyApp if needed for type reference
+import 'package:farmwisely/screens/login.dart'; // Import LoginScreen for navigation
 import 'package:farmwisely/utils/colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -27,9 +29,10 @@ class _SettingsState extends State<Settings> {
   bool _cropGrowthUpdates = false;
   bool _farmTaskReminders = true;
   MeasurementUnit _selectedUnit = MeasurementUnit.metric;
-  String? _profileImage;
-  late ImageProvider _imageProvider;
-  File? _imageFile;
+  String? _profileImageUrlFromServer; // Store the URL from server
+  late ImageProvider _imageProvider =
+      const AssetImage('assets/images/profile.jpg'); // Default image
+  File? _imageFile; // For newly picked image
   bool _isLoading = true;
   String? _token;
   int? _userId;
@@ -40,154 +43,279 @@ class _SettingsState extends State<Settings> {
     _loadToken();
   }
 
+   @override
+   void dispose() {
+     _nameController.dispose();
+     _eMailController.dispose();
+     _phoneNumberController.dispose();
+     super.dispose();
+   }
+
+
   Future<void> _loadToken() async {
     final prefs = await SharedPreferences.getInstance();
     final String? token = prefs.getString('token');
-      final int? userId = prefs.getInt('userId');
+    final int? userId = prefs.getInt('userId');
     if (token != null && userId != null) {
+       // Use mounted check before setState in async gaps
+       if (!mounted) return;
       setState(() {
         _token = token;
         _userId = userId;
-        _loadProfileData();
+        // Don't set _isLoading = false here, let _loadProfileData handle it
       });
+       await _loadProfileData(); // Await loading profile data
     } else {
+       if (!mounted) return;
       setState(() {
         _isLoading = false;
+        // Handle case where user isn't logged in - maybe navigate back?
+        // e.g., Navigator.of(context).pop(); or navigate to Login
       });
     }
   }
 
-    Future<void> _loadProfileData() async {
-     try {
-        final response = await http.get(
-            Uri.parse('https://devred.pythonanywhere.com/api/profile/'),
-            headers: {
-                'Authorization': 'Token $_token',
-            },
-        );
+  Future<void> _loadProfileData() async {
+    // Ensure token is loaded before proceeding
+    if (_token == null) {
+       if (mounted) {
+         setState(() => _isLoading = false);
+         _showError("Authentication Error", "Token not found.");
+       }
+      return;
+    }
 
-          if (response.statusCode == 200) {
-             final decodedData = json.decode(response.body);
-              setState(() {
-                 _nameController.text = decodedData['name'] ?? '';
-                 _eMailController.text = decodedData['email'] ?? '';
-                 _phoneNumberController.text = decodedData['phoneNumber'] ?? '';
-                 _selectedUnit = decodedData['measurementUnit'] == 'metric'
-                     ? MeasurementUnit.metric
-                     : MeasurementUnit.imperial;
-                _weatherAlerts = decodedData['weatherAlerts'] ?? true;
-                 _cropGrowthUpdates = decodedData['cropGrowthUpdates'] ?? false;
-                 _farmTaskReminders = decodedData['farmTaskReminders'] ?? true;
-                 if (decodedData['profileImage'] != null) {
-                    String imageUrl = 'https://devred.pythonanywhere.com' + decodedData['profileImage'];
-                     _profileImage = imageUrl;
-                   _imageProvider = NetworkImage(imageUrl);
-                } else {
-                     _imageProvider =
-                         const AssetImage('assets/images/profile.jpg');
-                }
-                 _isLoading = false;
-              });
-         } else {
-              _showError('Error loading profile data from the server', response.body);
-              setState(() {
-                  _isLoading = false;
-                });
-           }
+     // Start loading indicator specifically for this data fetch
+     if (mounted) setState(() => _isLoading = true);
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://devred.pythonanywhere.com/api/profile/'),
+        headers: {
+          'Authorization': 'Token $_token',
+        },
+      );
+
+      if (!mounted) return; // Check again after await
+
+      if (response.statusCode == 200) {
+        final decodedData = json.decode(response.body);
+        setState(() {
+          _nameController.text = decodedData['name'] ?? '';
+          _eMailController.text = decodedData['email'] ?? ''; // Email loaded here
+          _phoneNumberController.text = decodedData['phoneNumber'] ?? '';
+          _selectedUnit = (decodedData['measurementUnit'] ?? 'metric') == 'metric'
+              ? MeasurementUnit.metric
+              : MeasurementUnit.imperial;
+          _weatherAlerts = decodedData['weatherAlerts'] ?? true;
+          _cropGrowthUpdates = decodedData['cropGrowthUpdates'] ?? false;
+          _farmTaskReminders = decodedData['farmTaskReminders'] ?? true;
+
+          _profileImageUrlFromServer = decodedData['profileImage']; // Store URL
+          if (_profileImageUrlFromServer != null && _profileImageUrlFromServer!.isNotEmpty) {
+            // Ensure URL is absolute
+            String imageUrl = _profileImageUrlFromServer!;
+            if (!imageUrl.startsWith('http')) {
+               imageUrl = 'https://devred.pythonanywhere.com' + imageUrl;
+            }
+             _imageProvider = NetworkImage(imageUrl);
+          } else {
+            // Keep the default if no image from server
+             _imageProvider = const AssetImage('assets/images/profile.jpg');
+          }
+        });
+      } else {
+        _showError('Error loading profile data', response.body);
+      }
     } catch (e) {
-        _showError('An error occurred', e.toString());
-         setState(() {
-             _isLoading = false;
-           });
+      _showError('An error occurred during profile load', e.toString());
+    } finally {
+      // Ensure loading indicator stops regardless of outcome
+       if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _pickImageFromGallery() async {
-    final pickedFile = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-    );
-     if(pickedFile != null){
-        setState(() {
-            _imageFile = File(pickedFile.path);
-          _imageProvider = FileImage(_imageFile!);
-        });
+    try {
+       final pickedFile = await ImagePicker().pickImage(
+         source: ImageSource.gallery,
+         imageQuality: 80, // Optionally compress image
+       );
+       if (pickedFile != null) {
+          if (!mounted) return;
+         setState(() {
+           _imageFile = File(pickedFile.path);
+           _imageProvider = FileImage(_imageFile!); // Update preview immediately
+         });
+       }
+     } catch (e) {
+        if (!mounted) return;
+       _showError("Image Picker Error", e.toString());
+     }
+  }
+
+  Future<void> _saveProfileData() async {
+     if (_token == null) {
+       _showError("Authentication Error", "Token not found.");
+       return;
      }
 
-  }
- Future<void> _saveProfileData() async {
-        setState(() {
-            _isLoading = true;
-         });
+    setState(() {
+      _isLoading = true;
+    });
     try {
-            Map<String, dynamic> profileData = {
-                'name': _nameController.text,
-              'email': _eMailController.text,
-                'phoneNumber': _phoneNumberController.text,
-               'measurementUnit': _selectedUnit.toString().split('.').last,
-              'weatherAlerts': _weatherAlerts,
-                'cropGrowthUpdates': _cropGrowthUpdates,
-                'farmTaskReminders': _farmTaskReminders,
-            };
-            var request = http.MultipartRequest('PATCH', Uri.parse('https://devred.pythonanywhere.com/api/profile/'));
-            request.headers['Authorization'] = 'Token $_token';
-              request.fields.addAll({
-                 'name': _nameController.text,
-                  'email': _eMailController.text,
-                 'phoneNumber': _phoneNumberController.text,
-                 'measurementUnit': _selectedUnit.toString().split('.').last,
-                 'weatherAlerts': _weatherAlerts.toString(),
-                 'cropGrowthUpdates': _cropGrowthUpdates.toString(),
-                 'farmTaskReminders': _farmTaskReminders.toString(),
-               });
+      var request = http.MultipartRequest(
+          'PATCH', Uri.parse('https://devred.pythonanywhere.com/api/profile/'));
+      request.headers['Authorization'] = 'Token $_token';
 
-            if (_imageFile != null) {
-                request.files.add(await http.MultipartFile.fromPath('profileImage', _imageFile!.path));
-            }
-             var response = await request.send();
-            if (response.statusCode == 200) {
-                 _showSuccess('Profile updated successfully');
-               _loadProfileData();
-            } else {
-                final responseBody = await response.stream.bytesToString();
-                  _showError('Error saving profile data', responseBody);
-                   setState(() {
-                       _isLoading = false;
-                     });
-               }
-     } catch (e) {
-            _showError('An error occurred', e.toString());
-            setState(() {
-                _isLoading = false;
-            });
+      // Add text fields
+       request.fields.addAll({
+         'name': _nameController.text,
+         'email': _eMailController.text, // Save potentially edited email
+         'phoneNumber': _phoneNumberController.text,
+         'measurementUnit': _selectedUnit.toString().split('.').last,
+         'weatherAlerts': _weatherAlerts.toString(),
+         'cropGrowthUpdates': _cropGrowthUpdates.toString(),
+         'farmTaskReminders': _farmTaskReminders.toString(),
+       });
+
+
+      // Add image file ONLY if a new one was picked
+      if (_imageFile != null) {
+        request.files.add(
+            await http.MultipartFile.fromPath('profileImage', _imageFile!.path));
+      }
+
+      var response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+       if (!mounted) return;
+
+      if (response.statusCode == 200 || response.statusCode == 201) { // PATCH might return 200
+        _showSuccess('Profile updated successfully');
+         _imageFile = null; // Clear picked file after successful upload
+         await _loadProfileData(); // Reload data to show saved state (including new image URL if backend provides it)
+      } else {
+        _showError('Error saving profile data', 'Status Code: ${response.statusCode}\nResponse: $responseBody');
+      }
+    } catch (e) {
+       if (!mounted) return;
+      _showError('An error occurred during save', e.toString());
+    } finally {
+       if (mounted) {
+         setState(() {
+           _isLoading = false;
+         });
+       }
     }
   }
-  void _showError(String message, String details) {
-        showDialog(
-             context: context,
-             builder: (BuildContext context) {
-                return AlertDialog(
-                  title: Text('Error'),
-                  content: Text('$message\nDetails: $details'),
-                   actions: <Widget>[
-                      TextButton(
-                        child: Text('OK'),
-                          onPressed: () {
-                              Navigator.of(context).pop();
-                         },
-                       ),
-                    ],
-                 );
-                },
+
+  // --- Sign Out Logic ---
+  Future<void> _showSignOutConfirmationDialog() async {
+     if (!mounted) return;
+     showDialog<bool>( // Specify the return type for clarity
+       context: context,
+       builder: (BuildContext context) {
+         return AlertDialog(
+           title: const Text('Sign Out'),
+           content: const Text('Are you sure you want to sign out?'),
+           actions: <Widget>[
+             TextButton(
+               child: const Text('Cancel'),
+               onPressed: () {
+                 Navigator.of(context).pop(false); // Return false on cancel
+               },
+             ),
+             TextButton(
+               style: TextButton.styleFrom(foregroundColor: Colors.red),
+               child: const Text('Sign Out'),
+               onPressed: () {
+                  Navigator.of(context).pop(true); // Return true on confirmation
+               },
+             ),
+           ],
          );
-    }
-     void _showSuccess(String message) {
-           ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(message),
-                   duration: Duration(seconds: 2),
-                ),
-              );
-         }
+       },
+     ).then((confirmed) { // Handle the result of the dialog
+        if (confirmed == true) {
+           _signOut(); // Proceed with sign out only if confirmed
+        }
+     });
+   }
+
+  Future<void> _signOut() async {
+     if (!mounted) return; // Check mount status before async operation
+
+     setState(() {
+       _isLoading = true; // Show loading indicator during sign out
+     });
+
+     try {
+       final prefs = await SharedPreferences.getInstance();
+       await prefs.remove('token');
+       await prefs.remove('userId');
+       await prefs.remove('farmId'); // Also clear farmId if stored
+       await prefs.remove('farmData'); // Also clear cached farmData if stored
+       // Add any other keys specific to the logged-in user
+
+       if (!mounted) return; // Check again after await
+
+       // Navigate to Login Screen and remove all previous routes
+       Navigator.of(context).pushAndRemoveUntil(
+         MaterialPageRoute(builder: (context) => const LoginScreen()),
+         (Route<dynamic> route) => false, // This predicate removes all routes
+       );
+     } catch (e) {
+        if (!mounted) return;
+        _showError("Sign Out Error", "Could not clear preferences: ${e.toString()}");
+         setState(() {
+           _isLoading = false; // Stop loading indicator on error
+         });
+     }
+     // No need for finally block to set isLoading false here,
+     // as successful navigation removes this widget tree.
+   }
+   // --- End Sign Out Logic ---
+
+
+  // --- Helper methods for showing dialogs/snackbar ---
+   void _showError(String message, String details) {
+     if (!mounted) return; // Check mount status
+     showDialog(
+       context: context,
+       builder: (BuildContext context) {
+         return AlertDialog(
+           title: Text('Error'),
+           content: Text('$message\nDetails: $details'),
+           actions: <Widget>[
+             TextButton(
+               child: Text('OK'),
+               onPressed: () {
+                 Navigator.of(context).pop();
+               },
+             ),
+           ],
+         );
+       },
+     );
+   }
+
+   void _showSuccess(String message) {
+     if (!mounted) return;
+     ScaffoldMessenger.of(context).showSnackBar(
+       SnackBar(
+         content: Text(message),
+         duration: Duration(seconds: 2),
+         backgroundColor: Colors.green, // Added success color
+       ),
+     );
+   }
+  // --- End Helper methods ---
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -196,11 +324,12 @@ class _SettingsState extends State<Settings> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            widget.onPageChange(0);
+            widget.onPageChange(0); // Navigate back using the provided callback
           },
         ),
         title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          // ... (AppBar title remains the same)
+           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Settings and Profile',
@@ -213,294 +342,317 @@ class _SettingsState extends State<Settings> {
           ],
         ),
         actions: [
-          IconButton(
-            onPressed: () async {
-              await _saveProfileData();
-              // Debug Log
-            },
-            icon: const Icon(Icons.save),
-          ),
+           // Keep Save button if needed, or remove if save is only via bottom button
+          // IconButton(
+          //   onPressed: _saveProfileData,
+          //   tooltip: 'Save Profile',
+          //   icon: const Icon(Icons.save),
+          // ),
         ],
         backgroundColor: AppColors.background,
       ),
       body: _isLoading
-           ? Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity, // Expand to fill available width
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: AppColors.primary,
-                ),
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(
-                      height: 26,
-                    ),
-                    Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 70,
-                          backgroundImage: _imageProvider,
-                        ),
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: Container(
-                            decoration: const BoxDecoration(
+                    // --- Profile Section ---
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 20.0), // Added padding
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: AppColors.primary,
+                      ),
+                      child: Column(
+                        children: [
+                          Stack(
+                            alignment: Alignment.bottomRight, // Align edit button
+                            children: [
+                              CircleAvatar(
+                                radius: 60, // Slightly smaller radius
+                                backgroundImage: _imageProvider,
+                                backgroundColor: AppColors.secondary.withOpacity(0.2), // Placeholder bg
+                              ),
+                              Material( // Wrap IconButton for InkWell effect
                                 color: AppColors.secondary,
-                                borderRadius:
-                                    BorderRadius.all(Radius.circular(10))),
-                            child: IconButton(
-                              icon: const Icon(Icons.edit_outlined),
-                              onPressed: () async {
-                                // Debug log
-                                await _pickImageFromGallery(); // added await for async function
-                                // Debug log
-                              },
-                              color: AppColors.grey,
-                            ),
+                                borderRadius: BorderRadius.circular(20),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(20),
+                                  onTap: _pickImageFromGallery,
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Icon(
+                                      Icons.edit,
+                                      color: AppColors.grey,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                           const SizedBox(height: 20),
+                           // Text Fields for Name, Email, Phone
+                           _buildTextFieldRow(
+                             labelText: 'Name',
+                             hintText: 'Your Name',
+                             controller: _nameController,
+                           ),
+                            _buildTextFieldRow(
+                             labelText: 'Email',
+                             hintText: 'your.email@example.com',
+                             controller: _eMailController,
+                             keyboardType: TextInputType.emailAddress,
+                              readOnly: true, // Make Email read-only if it shouldn't be edited
+                           ),
+                            _buildTextFieldRow(
+                             labelText: 'Phone No.',
+                             hintText: '+1234567890',
+                             controller: _phoneNumberController,
+                              keyboardType: TextInputType.phone,
+                           ),
+                           const SizedBox(height: 10), // Reduced bottom padding
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // --- Notification Preferences ---
+                     Container(
+                       // ... (Notification container remains the same)
+                        width: double.infinity, // Expand to fill available width
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: AppColors.primary,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Notification Preferences',
+                                style: TextStyle(
+                                  color: AppColors.grey,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const Text(
+                                'Turn notifications on or off',
+                                style: TextStyle(
+                                    color: AppColors.grey,
+                                    fontSize: 14,
+                                    fontStyle: FontStyle.italic),
+                              ),
+                              _buildSwitchRow(
+                                  text: 'Weather Alerts',
+                                  value: _weatherAlerts,
+                                  onChanged: (value) =>
+                                      setState(() => _weatherAlerts = value)),
+                              _buildSwitchRow(
+                                  text: 'Crop Growth Updates',
+                                  value: _cropGrowthUpdates,
+                                  onChanged: (value) =>
+                                      setState(() => _cropGrowthUpdates = value)),
+                              _buildSwitchRow(
+                                  text: 'Farm Task Reminders',
+                                  value: _farmTaskReminders,
+                                  onChanged: (value) =>
+                                      setState(() => _farmTaskReminders = value)),
+                            ],
                           ),
                         ),
-                      ],
                     ),
-                    const SizedBox(
-                      height: 26,
-                    ),
-                    const SizedBox(
-                      height: 26,
-                    ),
-                    // Text Fields start here
-                    _buildTextFieldRow(
-                      labelText: 'Name',
-                      hintText: 'Ahmad Muhammad',
-                      controller: _nameController,
-                    ),
-                    _buildTextFieldRow(
-                      labelText: 'Email',
-                      hintText: 'youremail@example.com',
-                      controller: _eMailController,
-                    ),
-                    _buildTextFieldRow(
-                      labelText: 'Phone No.',
-                      hintText: '+911234567890',
-                      controller: _phoneNumberController,
-                    ),
+                    const SizedBox(height: 16),
 
-                    const SizedBox(height: 20),
+                    // --- Units of Measurement ---
+                    Container(
+                      // ... (Units container remains the same)
+                       width: double.infinity, // Expand to fill available width
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: AppColors.primary,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Units of Measurement',
+                                style: TextStyle(
+                                  color: AppColors.grey,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const Text(
+                                'Select measurement units',
+                                style: TextStyle(
+                                    color: AppColors.grey,
+                                    fontSize: 14,
+                                    fontStyle: FontStyle.italic),
+                              ),
+                              RadioListTile<MeasurementUnit>(
+                                title: const Text(
+                                  'Metric (kg, hectares, °C)', // Corrected typo
+                                  style: TextStyle(color: AppColors.grey),
+                                ),
+                                value: MeasurementUnit.metric,
+                                groupValue: _selectedUnit,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedUnit = value!;
+                                  });
+                                },
+                                activeColor: AppColors.secondary,
+                                contentPadding: EdgeInsets.zero,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              RadioListTile<MeasurementUnit>(
+                                title: const Text(
+                                  'Imperial (lbs, acres, °F)',
+                                  style: TextStyle(color: AppColors.grey),
+                                ),
+                                value: MeasurementUnit.imperial,
+                                groupValue: _selectedUnit,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedUnit = value!;
+                                  });
+                                },
+                                activeColor: AppColors.secondary,
+                                contentPadding: EdgeInsets.zero,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ],
+                          ),
+                        ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // --- Farm Information Link ---
+                    Container(
+                       width: double.infinity,
+                       padding: const EdgeInsets.all(16.0),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: AppColors.primary,
+                        ),
+                      child: const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Farm Information',
+                              style: TextStyle(
+                                color: AppColors.grey,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              'Farm related settings are in the My Farm Page.',
+                              style: TextStyle(
+                                  color: AppColors.grey,
+                                  fontSize: 14,
+                                  fontStyle: FontStyle.italic),
+                            ),
+                          ]),
+                    ),
+                    const SizedBox(height: 24),
+
+                     // --- Save Button ---
+                     Center( // Center the save button
+                       child: ElevatedButton.icon(
+                          icon: const Icon(Icons.save, color: AppColors.grey),
+                          label: const Text('Save Changes', style: TextStyle(color: AppColors.grey)),
+                          onPressed: _saveProfileData,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.secondary,
+                            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                             shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                          ),
+                        ),
+                     ),
+                      const SizedBox(height: 20), // Spacing before sign out
+
+                     // --- Sign Out Button ---
+                     Center( // Center the sign out button
+                       child: ElevatedButton.icon(
+                         icon: const Icon(Icons.logout, color: Colors.white),
+                         label: const Text('Sign Out', style: TextStyle(color: Colors.white)),
+                         onPressed: _showSignOutConfirmationDialog, // Trigger confirmation dialog
+                         style: ElevatedButton.styleFrom(
+                           backgroundColor: Colors.redAccent, // Distinct color for sign out
+                           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                         ),
+                       ),
+                     ),
+                     const SizedBox(height: 20), // Bottom padding
+
                   ],
                 ),
               ),
-              const SizedBox(
-                height: 16,
-              ),
-              Container(
-                width: double.infinity, // Expand to fill available width
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: AppColors.primary,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Notification Prefrences',
-                        style: TextStyle(
-                          color: AppColors.grey,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const Text(
-                        'Turn notification on or off',
-                        style: TextStyle(
-                            color: AppColors.grey,
-                            fontSize: 14,
-                            fontStyle: FontStyle.italic),
-                      ),
-                      _buildSwitchRow(
-                          text: 'Weather Alerts',
-                          value: _weatherAlerts,
-                          onChanged: (value) =>
-                              setState(() => _weatherAlerts = value)),
-                      _buildSwitchRow(
-                          text: 'Crop Growth Updates',
-                          value: _cropGrowthUpdates,
-                          onChanged: (value) =>
-                              setState(() => _cropGrowthUpdates = value)),
-                      _buildSwitchRow(
-                          text: 'Reminders For farm Task',
-                          value: _farmTaskReminders,
-                          onChanged: (value) =>
-                              setState(() => _farmTaskReminders = value)),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(
-                height: 16,
-              ),
-              Container(
-                width: double.infinity, // Expand to fill available width
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: AppColors.primary,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Units of Measurement',
-                        style: TextStyle(
-                          color: AppColors.grey,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const Text(
-                        'Select measurement units',
-                        style: TextStyle(
-                            color: AppColors.grey,
-                            fontSize: 14,
-                            fontStyle: FontStyle.italic),
-                      ),
-                      RadioListTile<MeasurementUnit>(
-                        title: const Text(
-                          'Metric (kg, heaters, °C)',
-                          style: TextStyle(color: AppColors.grey),
-                        ),
-                        value: MeasurementUnit.metric,
-                        groupValue: _selectedUnit,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedUnit = value!;
-                          });
-                        },
-                        activeColor: AppColors.secondary,
-                      ),
-                      RadioListTile<MeasurementUnit>(
-                        title: const Text(
-                          'Imperial (lbs,  acres, °F)',
-                          style: TextStyle(color: AppColors.grey),
-                        ),
-                        value: MeasurementUnit.imperial,
-                        groupValue: _selectedUnit,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedUnit = value!;
-                          });
-                        },
-                        activeColor: AppColors.secondary,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(
-                height: 16,
-              ),
-              const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Farm Information',
-                      style: TextStyle(
-                        color: AppColors.grey,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      'Farm related settings are in the My Farm Page',
-                      style: TextStyle(
-                          color: AppColors.grey,
-                          fontSize: 14,
-                          fontStyle: FontStyle.italic),
-                    ),
-                  ]),
-              const SizedBox(
-                height: 24,
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                    onPressed: _skip, // Skip functionality
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      backgroundColor: AppColors.grey,
-                    ),
-                    child: const Text('Cancel'),
-                  ),
-                  const SizedBox(
-                    width: 50.0,
-                  ),
-                  ElevatedButton(
-                    onPressed: _saveProfileData, // Save functionality
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      backgroundColor: AppColors.secondary,
-                    ),
-                    child: const Text('Save'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 
-  void _skip() {
-    widget.onPageChange(0);
-  }
-
-  Widget _buildTextFieldRow(
-      {required String labelText,
-      required String hintText,
-      TextEditingController? controller}) {
+   // --- Build Helper Widgets ---
+  Widget _buildTextFieldRow({
+    required String labelText,
+    required String hintText,
+    TextEditingController? controller,
+     TextInputType? keyboardType,
+     bool readOnly = false, // Added readOnly option
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center, // Align items vertically
         children: [
           SizedBox(
-            width: 100,
+            width: 90, // Adjusted width
             child: Text(
               labelText,
               style: const TextStyle(
                 color: AppColors.grey,
-                fontSize: 16,
+                fontSize: 15, // Slightly smaller
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
+          const SizedBox(width: 10), // Added spacing
           Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                  border: Border(
-                      bottom:
-                          BorderSide(color: AppColors.secondary, width: 0.5))),
-              child: CupertinoTextField(
-                controller: controller,
-                placeholder: hintText,
-                placeholderStyle: const TextStyle(
-                  color: AppColors.grey,
-                ),
-                style: const TextStyle(
-                  color: AppColors.grey,
-                ),
-                decoration: const BoxDecoration(),
+            child: CupertinoTextField(
+              controller: controller,
+              placeholder: hintText,
+              placeholderStyle: TextStyle(
+                color: AppColors.grey.withOpacity(0.6), // Lighter placeholder
               ),
+              style: const TextStyle(
+                color: AppColors.grey,
+                fontSize: 15,
+              ),
+              decoration: BoxDecoration( // Use BoxDecoration for border control
+                  border: Border(
+                      bottom: BorderSide(
+                           color: readOnly ? Colors.transparent : AppColors.secondary, // Hide border if readOnly
+                           width: 0.8)
+                      )
+                  ),
+               padding: const EdgeInsets.symmetric(vertical: 8.0), // Added padding
+               keyboardType: keyboardType,
+               readOnly: readOnly, // Apply readOnly property
             ),
           ),
         ],
@@ -514,26 +666,31 @@ class _SettingsState extends State<Settings> {
     required ValueChanged<bool> onChanged,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 4.0), // Reduced vertical padding
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            text,
-            style: const TextStyle(
-              color: AppColors.grey,
-              fontSize: 16,
+          Expanded( // Allow text to wrap if needed
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: AppColors.grey,
+                fontSize: 15, // Slightly smaller
+              ),
             ),
           ),
           CupertinoSwitch(
             value: value,
             onChanged: onChanged,
-            activeTrackColor: AppColors.secondary,
-            thumbColor: AppColors.grey,
-            inactiveTrackColor: const Color.fromARGB(80, 33, 33, 33),
+            activeColor: AppColors.secondary,
+            // Optional: Customize thumb color more
+            thumbColor: value ? AppColors.grey : Colors.grey[700],
+             trackColor: Colors.grey.withOpacity(0.3), // Customize inactive track
           )
         ],
       ),
     );
   }
-}
+  // --- End Build Helper Widgets ---
+
+} // End of _SettingsState

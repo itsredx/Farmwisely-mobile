@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'package:farmwisely/main.dart';
+// Import the new screen
+import 'package:farmwisely/screens/auth/set_profile_details_screen.dart'; // Import the new screen
 import 'package:farmwisely/utils/colors.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+// Remove unused imports if Geolocator/Permission handler are no longer used here
+// import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
-import 'package:permission_handler/permission_handler.dart';
+// import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -19,27 +22,30 @@ class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _emailController =
-      TextEditingController(); // Added email controller
+  final TextEditingController _emailController = TextEditingController();
   bool _isLoading = false;
-  late TabController _tabController; // Added the tab controller
-  String? _token;
-  // ignore: unused_field
-  int? _userId;
+  late TabController _tabController;
+  // Keep token/userId if needed for immediate feedback, but they aren't strictly necessary
+  // String? _token;
+  // int? _userId;
+
   @override
   void initState() {
     super.initState();
-    _tabController =
-        TabController(length: 2, vsync: this); //initializes the tab controller
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
   void _showError(String message, String details) {
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -60,6 +66,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _showSuccess(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -92,12 +99,12 @@ class _LoginScreenState extends State<LoginScreen>
         final String token = decodedData['token'];
         final int userId = decodedData['user_id'];
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', token); // store the token
-        await prefs.setInt('userId', userId); // store the user id
+        await prefs.setString('token', token);
+        await prefs.setInt('userId', userId);
+
+        // On Login, go directly to MyApp (assuming profile exists)
+        // A more robust app might check if farmId exists here or in MyApp's loading
         _showSuccess("Logged in Successfully");
-        _loadToken();
-        //_loadFarmId();
-        //_loadData();
         Navigator.pushReplacement(
           // ignore: use_build_context_synchronously
           context,
@@ -113,9 +120,12 @@ class _LoginScreenState extends State<LoginScreen>
     } catch (e) {
       _showError('An error occurred', e.toString());
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      // Ensure isLoading is set to false even if widget is disposed during async call
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -125,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen>
     });
     final String username = _usernameController.text;
     final String password = _passwordController.text;
-    final String email = _emailController.text; // Get the email
+    final String email = _emailController.text;
     try {
       final response = await http.post(
         Uri.parse('https://devred.pythonanywhere.com/api/auth/register/'),
@@ -135,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen>
         body: jsonEncode({
           'username': username,
           'password': password,
-          'email': email // Send the email in the request
+          'email': email
         }),
       );
 
@@ -144,218 +154,45 @@ class _LoginScreenState extends State<LoginScreen>
         final String token = decodedData['token'];
         final int userId = decodedData['user_id'];
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', token); // store the token
-        await prefs.setInt('userId', userId); // store the user id
-        _showSuccess("Signed Up Successfully");
-        _loadToken();
-        //_saveData();
+        await prefs.setString('token', token);
+        await prefs.setInt('userId', userId);
+
+        _showSuccess("Signed Up Successfully! Please create your farm profile.");
+
+        // **** CHANGE HERE: Navigate to CreateFarmProfileScreen ****
         Navigator.pushReplacement(
             // ignore: use_build_context_synchronously
             context,
             MaterialPageRoute(
-                builder: (context) => const MyApp(
-                      isLoggedIn: true,
-                    )));
+              // Navigate to the new screen
+              builder: (context) => SetProfileDetailsScreen(
+                userEmail: email, // Pass the captured email
+              ),
+            ));
+         // **** END CHANGE ****
+
       } else {
         _showError("Sign Up Failed", response.body);
       }
     } catch (e) {
       _showError('An error occurred', e.toString());
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _loadToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? token = prefs.getString('token');
-    final int? userId = prefs.getInt('userId');
-    if (token != null && userId != null) {
-      setState(() {
-        _token = token;
-        _userId = userId;
-        //_loadData();
-        _isLoading = false;
-      });
-    } else {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  // ignore: unused_element
-  Future<void> _loadFarmId() async {
-    try {
-      final response = await http.get(
-        Uri.parse('https://devred.pythonanywhere.com/api/farms/'),
-        headers: {
-          'Authorization': 'Token $_token',
-        },
-      );
-      if (response.statusCode == 200) {
-        final List<dynamic> farmDataList = json.decode(response.body);
-        if (farmDataList.isNotEmpty) {
-          Map<String, dynamic> decodedData = farmDataList[0];
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.setInt('farmId', decodedData['id']); //store the farmId
-        }
-      } else {
-        _showError('Error loading data', response.body);
-      }
-    } catch (e) {
-      _showError('Error loading data', e.toString());
-    }
-  }
-
-   // ignore: unused_element
-   Future<void> _loadData() async {
-    setState(() {
-        _isLoading = true; // Start loading
-    });
-
-    try {
-          // First, try to get the farm ID from the shared preferences.
-         final prefs = await SharedPreferences.getInstance();
-         final int? farmId = prefs.getInt('farmId');
-
-          if (farmId != null) {
-            // Check if farmId exists if yes then fetch the data else set isloading to false
-             final response = await http.get(
-                 Uri.parse(
-                  'https://devred.pythonanywhere.com/api/farms/$farmId/'), // Use the farm_id here
-                  headers: {
-                    'Authorization': 'Token $_token',
-                  },
-            );
-
-               if (response.statusCode == 200) {
-                 // Get SharedPreferences instance
-                  SharedPreferences prefs = await SharedPreferences.getInstance();
-                 await prefs.setString('farmData', response.body); // save data as a string
-                  setState(() {
-                     _isLoading = false;
-                   });
-             } else {
-                   _showError('Error loading data', response.body);
-                    setState(() {
-                      _isLoading = false;
-                   });
-                }
-        } else {
-            _showError(
-                'No farm data found', 'Make sure that you have created a farm profile');
-              setState(() {
-                  _isLoading = false;
-               });
-         }
-        } catch (e) {
-            _showError('An error occurred', e.toString());
-           setState(() {
-                _isLoading = false;
-              });
-       }
-  }
-
-  // ignore: unused_element
-  Future<void> _saveData() async {
-    setState(() {
-      _isLoading = true;
-    });
-    try {
-      // Check location permission before getting position
-      final permissionStatus = await Permission.location.request();
-      if (permissionStatus.isGranted) {
-        // ignore: unused_local_variable
-        Position position = await Geolocator.getCurrentPosition(
-            // ignore: deprecated_member_use
-            desiredAccuracy: LocationAccuracy.high);
-        final response = await http.post(
-          Uri.parse('https://devred.pythonanywhere.com/api/farms/'),
-          headers: {
-            'Authorization': 'Token $_token',
-            'Content-Type': 'application/json',
-          },
-          body: json.encode({
-            'farmName': '',
-            'farmLocation': '',
-            'farmSize': '',
-            'soilType': '',
-            'pHValue': 7,
-            'currentCrop': '',
-            'futureCrop': '',
-            'irrigationSystem': '',
-            'latitude': 000.0,
-            'longitude': 000.0,
-          }),
-        );
-
-        if (response.statusCode == 201) {
-          _showSuccess("farm data saved successfully");
-          final Map<String, dynamic> responseData =
-              json.decode(response.body); //decode the response
-          if (responseData
-              .containsKey('id')) //check if the response body has a key id
-          {
-            await _saveLocalData(responseData[
-                'id']); // save the farm id to local preferences using the same function
-          }
-
-          //_loadData();
-        } else {
-          _showError("Error", response.body);
-          setState(() {
-            _isLoading = false;
-          });
-        }
-      } else {
-        //Permission not granted
-        _showError("Error", 'Location permission not granted');
+       if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
-    } catch (e) {
-      _showError("Error:", e.toString());
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 
-  Future<void> _saveLocalData(int farmId) async {
-    // Get text from the TextField
-    String farmName = '';
-    String farmLocation = '';
-    String farmSize = '';
-
-    // Prepare data
-    final Map<String, dynamic> farmData = {
-      'id': farmId, // include the farm id from the server
-      'farmName': farmName, // Add farm name from TextField to JSON
-      'farmLocation': farmLocation,
-      'farmSize': farmSize,
-      'soilType': '', // Add soil type from dropdown to JSON
-      'pHValue': '',
-      'currentCrop': '',
-      'futureCrop': '',
-      'irrigationSystem': '',
-    };
-
-    // Encode data to JSON
-    String jsonData = jsonEncode(farmData);
-
-    // Get SharedPreferences instance
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-        'farmData', jsonData); // Save data in SharedPreferences
-  }
+  // Remove unused methods _loadToken, _loadFarmId, _loadData, _saveData, _saveLocalData
+  // as they are no longer needed in this screen's logic
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // ... Keep the existing build method structure for LoginScreen ...
+    // (The UI with TabBar, TextFields, Buttons remains the same)
+     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
@@ -364,6 +201,9 @@ class _LoginScreenState extends State<LoginScreen>
         bottom: TabBar(
           // used the tab bar
           controller: _tabController,
+          indicatorColor: AppColors.secondary, // Added indicator color
+          labelColor: AppColors.secondary, // Added label color
+          unselectedLabelColor: Colors.grey, // Added unselected label color
           tabs: const [
             Tab(text: 'Login'),
             Tab(text: 'Sign Up'),
@@ -378,132 +218,100 @@ class _LoginScreenState extends State<LoginScreen>
                 controller: _tabController,
                 children: [
                   // Login Tab
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      TextField(
-                        controller: _usernameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Username',
-                          floatingLabelStyle:
-                              TextStyle(color: AppColors.secondary),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.secondary),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.secondary),
-                          ),
-                          border: OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: AppColors.secondary)),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Password',
-                          floatingLabelStyle:
-                              TextStyle(color: AppColors.secondary),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.secondary),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.secondary),
-                          ),
-                          border: OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: AppColors.secondary)),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _login,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.secondary,
-                        ),
-                        child: const Text(
-                          'Login',
-                          style: TextStyle(color: AppColors.grey),
-                        ),
-                      ),
-                    ],
-                  ),
+                  _buildLoginForm(), // Extracted to a method for clarity
                   // Sign Up Tab
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      TextField(
-                        controller: _usernameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Username',
-                          floatingLabelStyle:
-                              TextStyle(color: AppColors.secondary),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.secondary),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.secondary),
-                          ),
-                          border: OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: AppColors.secondary)),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: _emailController, // Email field in sign up
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          floatingLabelStyle:
-                              TextStyle(color: AppColors.secondary),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.secondary),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.secondary),
-                          ),
-                          border: OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: AppColors.secondary)),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Password',
-                          floatingLabelStyle:
-                              TextStyle(color: AppColors.secondary),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.secondary),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.secondary),
-                          ),
-                          border: OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: AppColors.secondary)),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _signup,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.secondary,
-                        ),
-                        child: const Text(
-                          'Sign Up',
-                          style: TextStyle(color: AppColors.grey),
-                        ),
-                      ),
-                    ],
-                  ),
+                  _buildSignupForm(), // Extracted to a method for clarity
                 ],
               ),
             ),
     );
   }
+
+   // Extracted Login Form Widget
+   Widget _buildLoginForm() {
+     return Column(
+       mainAxisAlignment: MainAxisAlignment.center,
+       children: <Widget>[
+         TextField(
+           controller: _usernameController,
+           decoration: _inputDecoration('Username'), // Use helper
+         ),
+         const SizedBox(height: 20),
+         TextField(
+           controller: _passwordController,
+           obscureText: true,
+           decoration: _inputDecoration('Password'), // Use helper
+         ),
+         const SizedBox(height: 30),
+         ElevatedButton(
+           onPressed: _login,
+           style: ElevatedButton.styleFrom(
+             backgroundColor: AppColors.secondary,
+             padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+             textStyle: const TextStyle(fontSize: 16),
+           ),
+           child: const Text(
+             'Login',
+             style: TextStyle(color: AppColors.grey),
+           ),
+         ),
+       ],
+     );
+   }
+
+   // Extracted Signup Form Widget
+    Widget _buildSignupForm() {
+     return Column(
+       mainAxisAlignment: MainAxisAlignment.center,
+       children: <Widget>[
+         TextField(
+           controller: _usernameController, // Re-use controller or use separate ones if needed
+           decoration: _inputDecoration('Username'), // Use helper
+         ),
+         const SizedBox(height: 20),
+         TextField(
+           controller: _emailController,
+           decoration: _inputDecoration('Email'), // Use helper
+           keyboardType: TextInputType.emailAddress,
+         ),
+         const SizedBox(height: 20),
+         TextField(
+           controller: _passwordController, // Re-use controller or use separate ones if needed
+           obscureText: true,
+           decoration: _inputDecoration('Password'), // Use helper
+         ),
+         const SizedBox(height: 30),
+         ElevatedButton(
+           onPressed: _signup,
+           style: ElevatedButton.styleFrom(
+             backgroundColor: AppColors.secondary,
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+             textStyle: const TextStyle(fontSize: 16),
+           ),
+           child: const Text(
+             'Sign Up',
+             style: TextStyle(color: AppColors.grey),
+           ),
+         ),
+       ],
+     );
+   }
+
+   // Input decoration helper (can be shared or kept within LoginScreen)
+    InputDecoration _inputDecoration(String label) {
+     return InputDecoration(
+       labelText: label,
+       floatingLabelStyle: const TextStyle(color: AppColors.secondary),
+       enabledBorder: const OutlineInputBorder(
+         borderSide: BorderSide(color: AppColors.secondary),
+       ),
+       focusedBorder: const OutlineInputBorder(
+         borderSide: BorderSide(color: AppColors.secondary, width: 2.0),
+       ),
+       border: const OutlineInputBorder(
+           borderSide:
+               BorderSide(color: AppColors.secondary)),
+        contentPadding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+     );
+   }
 }
