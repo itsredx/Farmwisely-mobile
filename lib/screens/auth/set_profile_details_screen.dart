@@ -1,9 +1,7 @@
 // set_profile_details_screen.dart
-import 'dart:convert';
 import 'dart:io';
 import 'package:farmwisely/screens/auth/create_farm_profile_screen.dart'; // Next screen
 import 'package:farmwisely/utils/colors.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -23,9 +21,9 @@ class SetProfileDetailsScreen extends StatefulWidget {
 
 class _SetProfileDetailsScreenState extends State<SetProfileDetailsScreen> {
   final _formKey = GlobalKey<FormState>();
-  TextEditingController _nameController = TextEditingController();
-  TextEditingController _eMailController = TextEditingController();
-  TextEditingController _phoneNumberController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _eMailController = TextEditingController();
+  final TextEditingController _phoneNumberController = TextEditingController();
 
   late ImageProvider _imageProvider =
       const AssetImage('assets/images/profile.jpg'); // Default image
@@ -109,6 +107,7 @@ class _SetProfileDetailsScreenState extends State<SetProfileDetailsScreen> {
       // Check backend: Does it require these fields or are they optional on PATCH?
       request.fields['name'] = _nameController.text;
       request.fields['phoneNumber'] = _phoneNumberController.text;
+      request.fields['email'] = _eMailController.text;
       // We usually DON'T PATCH the email here, as it's tied to the user account itself.
       // The backend should already associate this profile update with the logged-in user via the token.
 

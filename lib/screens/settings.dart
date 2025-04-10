@@ -2,7 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io';
-import 'package:farmwisely/main.dart'; // Import MyApp if needed for type reference
+// Import MyApp if needed for type reference
 import 'package:farmwisely/screens/login.dart'; // Import LoginScreen for navigation
 import 'package:farmwisely/utils/colors.dart';
 import 'package:flutter/cupertino.dart';
@@ -116,7 +116,7 @@ class _SettingsState extends State<Settings> {
             // Ensure URL is absolute
             String imageUrl = _profileImageUrlFromServer!;
             if (!imageUrl.startsWith('http')) {
-               imageUrl = 'https://devred.pythonanywhere.com' + imageUrl;
+               imageUrl = 'https://devred.pythonanywhere.com$imageUrl';
             }
              _imageProvider = NetworkImage(imageUrl);
           } else {
@@ -402,12 +402,9 @@ class _SettingsState extends State<Settings> {
                              hintText: 'Your Name',
                              controller: _nameController,
                            ),
-                            _buildTextFieldRow(
-                             labelText: 'Email',
-                             hintText: 'your.email@example.com',
-                             controller: _eMailController,
-                             keyboardType: TextInputType.emailAddress,
-                              readOnly: true, // Make Email read-only if it shouldn't be edited
+                            _buildReadOnlyInfoRow( // Use a different helper for read-only
+                               labelText: 'Email',
+                               value: _eMailController.text, // Display text directly
                            ),
                             _buildTextFieldRow(
                              labelText: 'Phone No.',
@@ -682,15 +679,53 @@ class _SettingsState extends State<Settings> {
           CupertinoSwitch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.secondary,
+            activeTrackColor: AppColors.secondary,
             // Optional: Customize thumb color more
             thumbColor: value ? AppColors.grey : Colors.grey[700],
-             trackColor: Colors.grey.withOpacity(0.3), // Customize inactive track
+             inactiveTrackColor: Colors.grey.withOpacity(0.3), // Customize inactive track
           )
         ],
       ),
     );
   }
   // --- End Build Helper Widgets ---
+  // **** NEW HELPER FOR READ-ONLY INFO ****
+   Widget _buildReadOnlyInfoRow({
+     required String labelText,
+     required String value, // Pass the value directly
+   }) {
+     return Padding(
+       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0), // Adjusted padding
+       child: Row(
+         crossAxisAlignment: CrossAxisAlignment.center,
+         children: [
+           SizedBox(
+             width: 90,
+             child: Text(
+               labelText,
+               style: const TextStyle(
+                 color: AppColors.grey,
+                 fontSize: 15,
+                 fontWeight: FontWeight.w500,
+               ),
+             ),
+           ),
+           const SizedBox(width: 10),
+           Expanded(
+             child: Text(
+               value.isNotEmpty ? value : 'N/A', // Display value or fallback
+               style: const TextStyle(
+                 color: AppColors.grey,
+                 fontSize: 15,
+               ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis, // Prevent overflow
+             ),
+           ),
+         ],
+       ),
+     );
+   }
+   // **** END NEW HELPER ****
 
 } // End of _SettingsState

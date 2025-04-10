@@ -1,168 +1,66 @@
+// widgets/crop_card.dart
 import 'package:farmwisely/utils/colors.dart';
 import 'package:flutter/material.dart';
 
 class CropCard extends StatelessWidget {
   final String cropName;
-  final String sustainabilityRaiting;
+  final String sustainabilityRating; // Changed from 'Raiting'
   final String benefits;
   final String tips;
-  final void Function()? onPressed;
+  final String description; // Added description
 
   const CropCard({
     super.key,
     required this.cropName,
-    required this.sustainabilityRaiting,
-    this.onPressed,
+    required this.sustainabilityRating,
     required this.benefits,
     required this.tips,
+    required this.description, // Added required description
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       color: AppColors.primary,
+      elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: SizedBox(
-          width: double.infinity,
-          height: 230,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Crop Name',
-                    style: TextStyle(
-                      color: AppColors.grey,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Text(
-                    cropName,
-                    style: const TextStyle(
-                      color: AppColors.grey,
-                      fontSize: 18.0,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4.0),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Sustainability Raiting',
-                    style: TextStyle(
-                      color: AppColors.grey,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Text(
-                    sustainabilityRaiting,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        color: AppColors.grey,
-                        fontSize: 14,
-                        fontStyle: FontStyle.italic),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4.0),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Benefits',
-                    style: TextStyle(
-                      color: AppColors.grey,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  SizedBox(
-                    width: 50,
-                  ),
-                  Expanded(
-                    child: SizedBox(
-                      child: Text(
-                        benefits,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.end,
-                        style: TextStyle(
-                            color: AppColors.grey,
-                            fontSize: 14,
-                            fontStyle: FontStyle.italic),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4.0),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Tips',
-                    style: TextStyle(
-                      color: AppColors.grey,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  SizedBox(
-                    width: 90,
-                  ),
-                  Expanded(
-                    child: SizedBox(
-                      child: Text(
-                        tips,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.end,
-                        style: TextStyle(
-                            color: AppColors.grey,
-                            fontSize: 14,
-                            fontStyle: FontStyle.italic),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const Expanded(child: SizedBox(height: 16.0)),
-              Align(
-                alignment: Alignment.bottomRight,
-                child: OutlinedButton(
-                  onPressed: () {
-                    if (onPressed != null) onPressed!();
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.secondary),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28.0),
-                    ),
-                  ),
-                  child: const Text(
-                    'Learn More',
-                    style: TextStyle(
-                      color: AppColors.grey,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              cropName,
+              style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.secondary),
+            ),
+            const SizedBox(height: 8),
+            _buildInfoRow('Sustainability:', sustainabilityRating),
+            _buildInfoRow('Benefits:', benefits),
+            _buildInfoRow('Tips:', tips),
+             _buildInfoRow('Description:', description), // Display description
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: RichText(
+        text: TextSpan(
+          style: const TextStyle(fontSize: 14, color: AppColors.grey),
+          children: [
+            TextSpan(
+                text: '$label ',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            TextSpan(text: value),
+          ],
         ),
       ),
     );

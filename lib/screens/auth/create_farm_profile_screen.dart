@@ -347,7 +347,7 @@ class _CreateFarmProfileScreenState extends State<CreateFarmProfileScreen> {
                     Slider(
                       value: _pHValue,
                       min: 3.0, // Adjusted practical min pH
-                      max: 10.0, // Adjusted practical max pH
+                      max: 14.0, // Adjusted practical max pH
                       divisions: 70, // (10.0 - 3.0) * 10 = 70 divisions for 0.1 steps
                       activeColor: AppColors.secondary,
                       inactiveColor: AppColors.grey.withOpacity(0.5),
