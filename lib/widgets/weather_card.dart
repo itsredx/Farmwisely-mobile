@@ -22,28 +22,27 @@ class WeatherCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Determine background image based on subtitle
-    String backgroundImage;
-    if (weatherCondition.contains('Sunny')) {
+    String lowerCaseCondition = weatherCondition.toLowerCase();
+String backgroundImage;
+    if (lowerCaseCondition.contains('sunny') || lowerCaseCondition.contains('clear')) {
       backgroundImage = 'assets/images/sunny_weather_card.png';
-    } else if (weatherCondition.contains('Rain')) {
+    } else if (lowerCaseCondition.contains('rain')) {
       backgroundImage = 'assets/images/rainy_weather_card.png';
-    } else if (weatherCondition.contains('Cloudy')) {
+    } else if (lowerCaseCondition.contains('cloudy')) {
       backgroundImage = 'assets/images/cloudy_weather_card.png';
-    } else if (weatherCondition.contains('Humid')) {
+    } else if (lowerCaseCondition.contains('humid')) {
       backgroundImage = 'assets/images/humid_weather_card.png';
-    } else if (weatherCondition.contains('Cloudy')) {
-      backgroundImage = 'assets/images/cloudy_weather_card.png';
-    } else if (weatherCondition.contains('Drizzle')) {
+    }  else if (lowerCaseCondition.contains('drizzle')) {
       backgroundImage = 'assets/images/drizzle_weather_card.png';
-    } else if (weatherCondition.contains('Foggy')) {
+    } else if (lowerCaseCondition.contains('foggy')) {
       backgroundImage = 'assets/images/foggy_weather_card.png';
-    } else if (weatherCondition.contains('Overcast')) {
+    } else if (lowerCaseCondition.contains('overcast')) {
       backgroundImage = 'assets/images/overcast_weather_card.png';
-    } else if (weatherCondition.contains('Rainy & Snowy')) {
+    } else if (lowerCaseCondition.contains('rainy & snowy')) {
       backgroundImage = 'assets/images/rainy_snowy_weather_card.png';
-    } else if (weatherCondition.contains('Snowy')) {
+    } else if (lowerCaseCondition.contains('snowy')) {
       backgroundImage = 'assets/images/snowy_weather_card.png';
-    } else if (weatherCondition.contains('Windy')) {
+    } else if (lowerCaseCondition.contains('windy')) {
       backgroundImage = 'assets/images/windy_weather_card.png';
     } else {
       backgroundImage = 'assets/images/default_weather_card.png.jpg';
@@ -86,7 +85,7 @@ class WeatherCard extends StatelessWidget {
               const SizedBox(height: 3),
               if (weatherPridiction.isNotEmpty)
                 Text(
-                  weatherPridiction,
+                  '',
                   style: const TextStyle(
                     color: AppColors.grey,
                     fontSize: 16,

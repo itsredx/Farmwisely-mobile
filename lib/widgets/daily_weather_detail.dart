@@ -18,28 +18,28 @@ class DailyWeatherDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+     String lowerCaseCondition = weatherCondition.toLowerCase();
+
     String weatherIcon;
-    if (weatherCondition.contains('Sunny')) {
+    if (lowerCaseCondition.contains('sunny') || lowerCaseCondition.contains('clear')) {
       weatherIcon = 'assets/images/sunny.png';
-    } else if (weatherCondition.contains('Rain')) {
+    } else if (lowerCaseCondition.contains('rain')) {
       weatherIcon = 'assets/images/rainy.png';
-    } else if (weatherCondition.contains('Cloudy')) {
+    } else if (lowerCaseCondition.contains('cloudy')) {
       weatherIcon = 'assets/images/cloudy.png';
-    } else if (weatherCondition.contains('Humid')) {
+    } else if (lowerCaseCondition.contains('humid')) {
       weatherIcon = 'assets/images/humid_weather_card.png';
-    } else if (weatherCondition.contains('Cloudy')) {
-      weatherIcon = 'assets/images/cloudy_weather_card.png';
-    } else if (weatherCondition.contains('Drizzle')) {
+    } else if (lowerCaseCondition.contains('drizzle')) {
       weatherIcon = 'assets/images/drizzle_weather_card.png';
-    } else if (weatherCondition.contains('Foggy')) {
+    } else if (lowerCaseCondition.contains('foggy')) {
       weatherIcon = 'assets/images/foggy_weather_card.png';
-    } else if (weatherCondition.contains('Overcast')) {
+    } else if (lowerCaseCondition.contains('overcast')) {
       weatherIcon = 'assets/images/overcast_weather_card.png';
-    } else if (weatherCondition.contains('Rainy & Snowy')) {
+    } else if (lowerCaseCondition.contains('rainy & snowy')) {
       weatherIcon = 'assets/images/rainy_snowy_weather_card.png';
-    } else if (weatherCondition.contains('Snowy')) {
+    } else if (lowerCaseCondition.contains('snowy')) {
       weatherIcon = 'assets/images/snowy_weather_card.png';
-    } else if (weatherCondition.contains('Windy')) {
+    } else if (lowerCaseCondition.contains('windy')) {
       weatherIcon = 'assets/images/windy_weather_card.png';
     } else {
       weatherIcon = 'assets/images/error.png';
