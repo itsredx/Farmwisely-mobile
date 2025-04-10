@@ -30,6 +30,15 @@
             <data android:mimeType="text/plain" />
         </intent>
     </queries>
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+
+            <category android:name="android.intent.category.BROWSABLE" />
+
+            <data android:scheme="https" />
+        </intent>
+    </queries>
 
     <permission
         android:name="com.example.myapp.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"

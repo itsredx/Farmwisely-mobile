@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Convert to StatefulWidget
 class RecommendationsScreen extends StatefulWidget {
   const RecommendationsScreen({super.key});
+  
 
   @override
   State<RecommendationsScreen> createState() => _RecommendationsScreenState();

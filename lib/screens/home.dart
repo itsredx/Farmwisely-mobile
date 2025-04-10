@@ -2,8 +2,9 @@ import 'dart:convert'; // For json decoding
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // For accessing stored data
 import 'package:http/http.dart' as http; // For making API calls
+import 'package:geocoding/geocoding.dart'; // Import geocoding package
 import '../widgets/weather_card.dart';
-import '../widgets/custom_card.dart';
+//import '../widgets/custom_card.dart';
 import '../widgets/info_card.dart';
 import '../utils/colors.dart'; // Assuming your colors are here
 
@@ -21,10 +22,10 @@ class _HomeState extends State<Home> {
   bool _isLoadingWeather = true; // Separate loading state for weather card
   String? _weatherErrorMessage;
   Map<String, dynamic>? _currentWeatherConditions;
-  String? _weatherLocation;
+  String? _weatherDisplayLocation; // Renamed for clarity
   String? _token;
-  String? _latitude;
-  String? _longitude;
+  double? _latitude; // Changed to double for geocoding
+  double? _longitude; // Changed to double for geocoding
 
   @override
   void initState() {
@@ -40,15 +41,16 @@ class _HomeState extends State<Home> {
     final prefs = await SharedPreferences.getInstance();
     final String? token = prefs.getString('token');
     final String? farmDataString = prefs.getString('farmData');
-    String? lat;
-    String? lon;
+    double? lat;
+    double? lon;
 
     // Extract Lat/Lon from cached farm data
     if (farmDataString != null) {
       try {
         final Map<String, dynamic> farmData = json.decode(farmDataString);
-        lat = farmData['latitude']?.toString();
-        lon = farmData['longitude']?.toString();
+        // Try to parse lat/lon as double
+        lat = (farmData['latitude'] is num) ? (farmData['latitude'] as num).toDouble() : double.tryParse(farmData['latitude']?.toString() ?? '');
+        lon = (farmData['longitude'] is num) ? (farmData['longitude'] as num).toDouble() : double.tryParse(farmData['longitude']?.toString() ?? '');
       } catch (e) {
         print("Home - Error decoding farm data: $e");
         // Don't set error message yet, let fetch handle it if lat/lon are null
@@ -62,7 +64,10 @@ class _HomeState extends State<Home> {
         _latitude = lat;
         _longitude = lon;
       });
-      await _fetchHomeWeatherData(); // Fetch weather data
+      await Future.wait([
+        _fetchHomeWeatherData(),
+        _fetchLocationName(), // Fetch location name using geocoding
+      ]); // Fetch weather data
     } else {
       if (!mounted) return;
       setState(() {
@@ -70,6 +75,9 @@ class _HomeState extends State<Home> {
         _weatherErrorMessage = "Farm location needed for weather."; // More specific error
       });
     }
+    if (mounted && _isLoadingWeather) {
+       setState(() => _isLoadingWeather = false);
+     }
   }
 
   Future<void> _fetchHomeWeatherData() async {
@@ -104,7 +112,7 @@ class _HomeState extends State<Home> {
         setState(() {
           // Store only necessary parts for the home card
           _currentWeatherConditions = decodedData['currentConditions'];
-          _weatherLocation = decodedData['resolvedAddress']?.split(',').first; // Get first part of address (e.g., city)
+// Get first part of address (e.g., city)
           _isLoadingWeather = false;
         });
       } else {
@@ -122,6 +130,47 @@ class _HomeState extends State<Home> {
        print("Home - Weather fetch error: $e"); // Log full error
     }
   }
+  // --- New function for Reverse Geocoding ---
+  Future<void> _fetchLocationName() async {
+     if (_latitude == null || _longitude == null) return;
+
+     try {
+       // Use geocoding package
+       List<Placemark> placemarks = await placemarkFromCoordinates(
+         _latitude!,
+         _longitude!,
+         // localeIdentifier: "en_US" // Optional: Specify locale
+       );
+
+       if (!mounted) return;
+
+       if (placemarks.isNotEmpty) {
+         Placemark place = placemarks[0];
+         // Construct a display name (customize as needed)
+         String displayName = "${place.locality ?? place.subAdministrativeArea ?? ''}${place.locality != null && place.administrativeArea != null ? ', ' : ''}${place.administrativeArea ?? ''}";
+         if (displayName.trim().isEmpty) {
+           displayName = place.name ?? 'Nearby Location'; // Fallback
+         }
+
+         setState(() {
+           _weatherDisplayLocation = displayName.trim();
+         });
+       } else {
+          setState(() {
+           _weatherDisplayLocation = "Unknown Location";
+         });
+       }
+     } catch (e) {
+       if (!mounted) return;
+       print("Home - Geocoding error: $e");
+        setState(() {
+         _weatherDisplayLocation = "Location N/A"; // Show specific geocoding error
+         // Optionally set _weatherErrorMessage too if desired
+         // _weatherErrorMessage = "Could not get location name";
+       });
+     }
+  }
+  // --- End Geocoding Function ---
   // --- End Data Loading Logic ---
 
   @override
@@ -231,6 +280,7 @@ class _HomeState extends State<Home> {
               ],
             ),
             const SizedBox(height: 16),
+           /* const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.all(0),
               child: SingleChildScrollView(
@@ -261,7 +311,7 @@ class _HomeState extends State<Home> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 16),*/
           ],
         ),
       ),
@@ -317,8 +367,8 @@ class _HomeState extends State<Home> {
     String condition = _currentWeatherConditions!['conditions'] ?? 'N/A';
     // Simplistic prediction for home screen
     String prediction = 'Current: $condition';
-    // Try to get city name or fallback
-     String location = _weatherLocation ?? 'Your Location';
+    // *** Use the location name fetched via geocoding ***
+    String location = _weatherDisplayLocation ?? 'Loading Location...';
 
 
     return WeatherCard(

@@ -1,21 +1,52 @@
 import 'package:d_chart/d_chart.dart';
 import 'package:farmwisely/utils/colors.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+//import 'package:intl/intl.dart'; // Keep for NumberFormat if used elsewhere, though not needed for month shortening
 
+class YieldData {
+  final String month;
+  final num increase;
 
-List<OrdinalData> series = [
-  OrdinalData(domain: 'Jul', measure: 120),
-  OrdinalData(domain: 'Aug', measure: 180),
-  OrdinalData(domain: 'Sep', measure: 240),
-  OrdinalData(domain: 'Oct', measure: 170),
-];
+  YieldData({required this.month, required this.increase});
+
+  factory YieldData.fromJson(Map<String, dynamic> json) {
+    return YieldData(
+      month: json['month'] ?? 'N/A',
+      increase: (json['increase'] is String)
+          ? (num.tryParse(json['increase']) ?? 0)
+          : (json['increase'] ?? 0),
+    );
+  }
+}
+
 
 class BarGraph extends StatelessWidget {
-  const BarGraph({super.key});
+  final List<YieldData> yieldDataList;
+
+  const BarGraph({super.key, required this.yieldDataList});
 
   @override
   Widget build(BuildContext context) {
+    // Convert the incoming data to the format DChart expects
+    final List<OrdinalData> series = yieldDataList.map((data) {
+      // **** ADDED LOGIC TO SHORTEN MONTH NAME ****
+      String shortMonth = data.month; // Default to full name
+      if (data.month.length >= 3) {
+        shortMonth = data.month.substring(0, 3); // Take first 3 characters
+      }
+      // **** END ADDED LOGIC ****
+
+      return OrdinalData(
+        domain: shortMonth, // Use the shortened month name
+        measure: data.increase
+      );
+    }).toList();
+
+    // Handle empty data case for the chart
+    if (series.isEmpty) {
+      return const Center(child: Text("No yield data available", style: TextStyle(color: AppColors.grey)));
+    }
+
     return Card(
       color: AppColors.primary,
       surfaceTintColor: AppColors.primary,
@@ -27,62 +58,45 @@ class BarGraph extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+             const Text(
+                "Monthly Yield Increase Prediction (%)",
+                style: TextStyle(color: AppColors.grey, fontWeight: FontWeight.bold),
+              ),
+             const SizedBox(height: 10),
             AspectRatio(
               aspectRatio: 16 / 9,
               child: DChartBarO(
                 vertical: false,
-                layoutMargin: LayoutMargin(50, 20, 30, 20),
                 configRenderBar: ConfigRenderBar(
-                  barGroupInnerPaddingPx: 0,
-                  radius: 30,
+                   radius: 8,
+                   maxBarWidthPx: 25,
                 ),
                 domainAxis: const DomainAxis(
                   showLine: false,
                   tickLength: 0,
-                  gapAxisToLabel: 12,
+                  gapAxisToLabel: 8,
+                  // Adjust font size if needed for shorter labels
+                  labelStyle: LabelStyle(color: AppColors.grey, fontSize: 10),
                 ),
                 measureAxis: MeasureAxis(
                   tickLength: 0,
+                  showLine: false,
                   tickLabelFormatter: (measure) {
-                    return NumberFormat.compactCurrency(
-                      symbol: '\$',
-                      decimalDigits: 0,
-                    ).format(measure);
+                    return "${measure?.toStringAsFixed(0) ?? '0'}%";
                   },
+                   labelStyle: const LabelStyle(color: AppColors.grey, fontSize: 10),
                 ),
                 groupList: [
                   OrdinalGroup(
                     id: '1',
-                    data: series,
-                    color: Colors.deepPurple,
+                    data: series, // Use dynamic data with shortened domain
+                    color: AppColors.secondary,
                   ),
                 ],
               ),
             ),
-            SizedBox(
-              height: 16.0,
-            ),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  backgroundColor: AppColors.secondary,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'View Details',
-                  style: TextStyle(
-                      color: AppColors.grey,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
+            const SizedBox(height: 16.0),
+            // Removed button
           ],
         ),
       ),

@@ -96,7 +96,7 @@ String backgroundImage;
                 description,
                 style: const TextStyle(
                   color: AppColors.grey,
-                  fontSize: 24,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),

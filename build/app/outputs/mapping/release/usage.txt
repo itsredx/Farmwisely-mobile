@@ -11203,6 +11203,19 @@ androidx.window.reflection.ReflectionUtils:
     public final boolean validateImplementation$window_release(java.lang.Class,java.lang.Class)
     public static synthetic boolean validateReflection$window_release$default(java.lang.String,kotlin.jvm.functions.Function0,int,java.lang.Object)
 androidx.window.reflection.WindowExtensionsConstants
+com.baseflow.geocoding.GeocodingPlugin:
+    private static final java.lang.String TAG
+com.baseflow.geocoding.MethodCallHandlerImpl:
+    private static final java.lang.String TAG
+com.baseflow.geocoding.R
+com.baseflow.geocoding.utils.AddressLineParser:
+    private static final java.lang.String ADDRESS_LINE_DELIMITER
+    public void <init>()
+com.baseflow.geocoding.utils.AddressMapper:
+    public void <init>()
+com.baseflow.geocoding.utils.LocaleConverter:
+    private static final java.lang.String LOCALE_DELIMITER
+    public void <init>()
 com.baseflow.geolocator.GeolocatorLocationService:
     private static final java.lang.String CHANNEL_ID
     private static final int ONGOING_NOTIFICATION_ID

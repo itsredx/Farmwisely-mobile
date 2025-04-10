@@ -1,13 +1,14 @@
 import 'dart:convert';
 import 'package:farmwisely/widgets/daily_weather_detail.dart';
 import 'package:farmwisely/widgets/weather_card.dart';
+import 'package:farmwisely/widgets/weather_detail_popup.dart';
 import 'package:flutter/material.dart';
 import 'package:farmwisely/utils/colors.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart'; // Import intl package
+import 'package:geocoding/geocoding.dart'; // Import geocoding package
 
-// Convert to StatefulWidget
 class WeatherScreen extends StatefulWidget {
   const WeatherScreen({super.key});
 
@@ -18,78 +19,71 @@ class WeatherScreen extends StatefulWidget {
 class _WeatherScreenState extends State<WeatherScreen> {
   bool _isLoading = true;
   String? _errorMessage;
-  Map<String, dynamic>? _weatherData;
+  Map<String, dynamic>? _weatherData; // Holds the full weather API response
+  String? _displayLocationName; // Holds the name from geocoding
   String? _token;
-  String? _latitude;
-  String? _longitude;
+  double? _latitude; // Changed to double
+  double? _longitude; // Changed to double
 
   @override
   void initState() {
     super.initState();
-    _loadPrerequisitesAndFetchWeather();
+    _loadPrerequisitesAndFetchData(); // Combined loading function
   }
 
-  Future<void> _loadPrerequisitesAndFetchWeather() async {
-     if (!mounted) return;
-    setState(() => _isLoading = true); // Start loading
+  Future<void> _loadPrerequisitesAndFetchData() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
 
     final prefs = await SharedPreferences.getInstance();
     final String? token = prefs.getString('token');
     final String? farmDataString = prefs.getString('farmData');
-    String? lat;
-    String? lon;
+    double? lat;
+    double? lon;
 
     if (farmDataString != null) {
       try {
         final Map<String, dynamic> farmData = json.decode(farmDataString);
-        // Assuming keys are 'latitude' and 'longitude', convert to string
-        lat = farmData['latitude']?.toString();
-        lon = farmData['longitude']?.toString();
+        // Parse lat/lon as double
+        lat = (farmData['latitude'] is num) ? (farmData['latitude'] as num).toDouble() : double.tryParse(farmData['latitude']?.toString() ?? '');
+        lon = (farmData['longitude'] is num) ? (farmData['longitude'] as num).toDouble() : double.tryParse(farmData['longitude']?.toString() ?? '');
       } catch (e) {
-        print("Error decoding farm data: $e");
-         if (!mounted) return;
-        setState(() {
-          _errorMessage = "Error reading farm location data.";
-          _isLoading = false;
-        });
-        return;
+        print("WeatherScreen - Error decoding farm data: $e");
       }
     }
 
     if (token != null && lat != null && lon != null) {
-       if (!mounted) return;
+      if (!mounted) return;
       setState(() {
         _token = token;
         _latitude = lat;
         _longitude = lon;
       });
-      await _fetchWeatherData(); // Fetch weather data
+      // Fetch weather and location name concurrently
+      await Future.wait([
+        _fetchWeatherData(),
+        _fetchLocationName(),
+      ]);
     } else {
-       if (!mounted) return;
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _errorMessage = "Farm location or authentication token not found.";
       });
     }
+     // Ensure loading stops even if prerequisites fail before fetch calls
+     if (mounted && _isLoading) {
+       setState(() => _isLoading = false);
+     }
   }
 
   Future<void> _fetchWeatherData() async {
-    if (_token == null || _latitude == null || _longitude == null) {
-      setState(() {
-        _errorMessage = "Missing required data (token/location) to fetch weather.";
-        _isLoading = false;
-      });
-      return;
-    }
+     if (_token == null || _latitude == null || _longitude == null) return;
 
-     if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null; // Clear previous error
-    });
+    // Loading state managed by the combined function
 
     try {
-      final String apiUrl = 'https://devred.pythonanywhere.com/api/weather/$_latitude/$_longitude/';
+      final String apiUrl = 'https://devred.pythonanywhere.com/api/weather/${_latitude!.toString()}/${_longitude!.toString()}/';
       final response = await http.get(
         Uri.parse(apiUrl),
         headers: {'Authorization': 'Token $_token'},
@@ -101,43 +95,104 @@ class _WeatherScreenState extends State<WeatherScreen> {
         final decodedData = json.decode(response.body);
         setState(() {
           _weatherData = decodedData;
-          _isLoading = false;
+          // Don't set error message if successful
         });
       } else {
         setState(() {
-          _errorMessage = "Failed to load weather data (Status: ${response.statusCode}): ${response.body}";
-          _isLoading = false;
+          // Only set error if no other error exists (e.g., from geocoding)
+           _errorMessage ??= "Failed to load weather data (Status: ${response.statusCode}): ${response.body}";
         });
       }
     } catch (e) {
        if (!mounted) return;
       setState(() {
-        _errorMessage = "An error occurred fetching weather: ${e.toString()}";
-        _isLoading = false;
+        _errorMessage ??= "An error occurred fetching weather: ${e.toString()}";
       });
     }
   }
 
-  // Helper to get day name from epoch seconds
+   // --- Function for Reverse Geocoding ---
+  Future<void> _fetchLocationName() async {
+     if (_latitude == null || _longitude == null) return;
+
+     try {
+       List<Placemark> placemarks = await placemarkFromCoordinates(
+         _latitude!,
+         _longitude!,
+       );
+
+       if (!mounted) return;
+
+       if (placemarks.isNotEmpty) {
+         Placemark place = placemarks[0];
+         // Construct a display name (e.g., City, State) - Customize as needed
+         String displayName = "${place.locality ?? place.subAdministrativeArea ?? ''}${place.locality != null && place.administrativeArea != null ? ', ' : ''}${place.administrativeArea ?? ''}";
+          if (displayName.trim().isEmpty) {
+           displayName = place.street ?? place.name ?? 'Nearby Location'; // Fallback
+         }
+         setState(() {
+           _displayLocationName = displayName.trim();
+         });
+       } else {
+          setState(() {
+           _displayLocationName = "Unknown Location";
+         });
+       }
+     } catch (e) {
+       if (!mounted) return;
+       print("WeatherScreen - Geocoding error: $e");
+        setState(() {
+         _displayLocationName = "Location Name N/A";
+         // Optionally set the main error message if geocoding fails critically
+         // if (_errorMessage == null) {
+         //    _errorMessage = "Could not determine location name.";
+         // }
+       });
+     }
+  }
+  // --- End Geocoding Function ---
+
+  // --- New Method to Show Popup ---
+  void _showWeatherDetailPopup() {
+    // Ensure we have data before showing the popup
+    if (_weatherData == null || _weatherData!['currentConditions'] == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Weather details not available yet.")),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return WeatherDetailPopup(
+          currentConditions: _weatherData!['currentConditions'],
+          locationName: _displayLocationName, // Pass the fetched location name
+        );
+      },
+    );
+  }
+  // --- End New Method ---
+
+
+  // --- Formatting Helpers ---
   String _getDayFromEpoch(int epochSeconds) {
     final dateTime = DateTime.fromMillisecondsSinceEpoch(epochSeconds * 1000);
-    return DateFormat('E').format(dateTime); // 'E' gives short day name (e.g., Mon)
+    return DateFormat('E').format(dateTime);
   }
 
-  // Helper to format temperature range
   String _formatTempRange(dynamic tempMax, dynamic tempMin) {
     final max = tempMax?.toStringAsFixed(0) ?? '--';
     final min = tempMin?.toStringAsFixed(0) ?? '--';
     return "$min°C - $max°C";
   }
 
-  // Helper to format rain probability
   String _formatPrecipProb(dynamic prob) {
-     if (prob == null) return '--% chance';
-     // API might return 0-100 or 0.0-1.0, adjust if needed
-     final probPercent = (prob is double && prob <= 1.0) ? (prob * 100) : prob;
-     return "${probPercent?.toStringAsFixed(0) ?? '--'}% chance";
+    if (prob == null) return '--% chance';
+    final probPercent = (prob is double && prob <= 1.0) ? (prob * 100) : prob;
+    return "${probPercent?.toStringAsFixed(0) ?? '--'}% chance";
   }
+  // --- End Formatting Helpers ---
 
 
   @override
@@ -145,7 +200,6 @@ class _WeatherScreenState extends State<WeatherScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        // ... (AppBar leading and title remain the same) ...
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -168,13 +222,13 @@ class _WeatherScreenState extends State<WeatherScreen> {
         actions: [
           IconButton(
             tooltip: "Refresh Weather",
-            onPressed: _isLoading ? null : _fetchWeatherData, // Call fetch method
+            // Call combined function to refresh everything
+            onPressed: _isLoading ? null : _loadPrerequisitesAndFetchData,
             icon: const Icon(Icons.refresh_outlined),
           ),
         ],
         backgroundColor: AppColors.background,
       ),
-      // Use a builder for the body content based on state
       body: _buildBody(),
     );
   }
@@ -184,6 +238,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    // Display error first if it exists
     if (_errorMessage != null) {
       return Center(
           child: Padding(
@@ -193,40 +248,38 @@ class _WeatherScreenState extends State<WeatherScreen> {
                   textAlign: TextAlign.center)));
     }
 
+    // Check if weather data is still null after loading and no error
     if (_weatherData == null) {
-      return const Center(child: Text('No weather data available.'));
+      return const Center(child: Text('Weather data could not be loaded.'));
     }
 
     // --- Data Loaded - Extract and Display ---
     final currentConditions = _weatherData!['currentConditions'];
-    final days = _weatherData!['days'] as List<dynamic>? ?? []; // Forecast days
-    final alerts = _weatherData!['alerts'] as List<dynamic>? ?? []; // Weather alerts
+    final days = _weatherData!['days'] as List<dynamic>? ?? [];
+    final alerts = _weatherData!['alerts'] as List<dynamic>? ?? [];
 
     String currentTemp = currentConditions?['temp']?.toStringAsFixed(0) ?? '--';
     String currentCondition = currentConditions?['conditions'] ?? 'N/A';
-    // Simple 'prediction' - maybe mention if rain is coming soon from hourly? (More complex)
-    // Or just use current condition again, or an alert summary.
     String simplePrediction = alerts.isNotEmpty
         ? alerts[0]['event'] ?? 'Weather Alert Active'
         : 'Conditions: $currentCondition';
-    String location = _weatherData!['resolvedAddress'] ?? 'Your Farm Location';
+
+    // *** Use the geocoded location name ***
+    String location = _displayLocationName ?? 'Loading Location...';
 
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        // Removed the extra Expanded widget here
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             WeatherCard(
               temperature: currentTemp,
-              weatherPridiction: simplePrediction, // Use a generated prediction/alert
+              weatherPridiction: simplePrediction,
               weatherCondition: currentCondition,
-              description: location, // Use resolved address
-              buttonText: 'View Details', // Example
-              onButtonPressed: () {
-                // TODO: Implement navigation to a more detailed view if needed
-              },
+              description: location, // Pass geocoded location
+              buttonText: 'View Details',
+              onButtonPressed: _showWeatherDetailPopup,
             ),
             const SizedBox(height: 16),
 
@@ -247,7 +300,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                ListView.separated(
                   physics: const NeverScrollableScrollPhysics(),
                   shrinkWrap: true,
-                  itemCount: days.length > 7 ? 7 : days.length, // Show max 7 days
+                  itemCount: days.length > 7 ? 7 : days.length,
                   itemBuilder: (context, index) {
                     final dayData = days[index];
                     return DailyWeatherDetail(
@@ -256,7 +309,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                       prediction: _formatPrecipProb(dayData['precipprob']),
                       weatherCondition: dayData['conditions'] ?? 'N/A',
                       onPressed: () {
-                        // TODO: Show hourly details for this day?
+                        // TODO: Show hourly details
                       });
                   },
                   separatorBuilder: (context, index) => const SizedBox(height: 6),
@@ -287,13 +340,19 @@ class _WeatherScreenState extends State<WeatherScreen> {
                  itemCount: alerts.length,
                  itemBuilder: (context, index) {
                     final alert = alerts[index];
-                    // Determine icon/color based on severity or event type (needs customization)
-                    IconData alertIcon = Icons.warning_amber_rounded;
-                    Color alertColor = Colors.orangeAccent;
-                    if (alert['event']?.toLowerCase().contains('warning')) {
-                       alertColor = Colors.redAccent;
-                    } else if (alert['event']?.toLowerCase().contains('watch')) {
-                       alertColor = Colors.yellow.shade700;
+                    IconData alertIcon = Icons.info_outline; // Default icon
+                    Color alertColor = Colors.blueAccent;    // Default color
+
+                    String eventLower = alert['event']?.toLowerCase() ?? '';
+                    if (eventLower.contains('warning')) {
+                      alertIcon = Icons.warning_amber_rounded;
+                      alertColor = Colors.redAccent;
+                    } else if (eventLower.contains('watch')) {
+                      alertIcon = Icons.watch_later_outlined; // Example different icon
+                      alertColor = Colors.orangeAccent;
+                    } else if (eventLower.contains('advisory')) {
+                       alertIcon = Icons.info_outline;
+                       alertColor = Colors.lightBlue;
                     }
 
                     return Padding(
@@ -308,21 +367,18 @@ class _WeatherScreenState extends State<WeatherScreen> {
                  },
                ),
 
-            // You can add custom insights based on weather data here if needed
-            // e.g., High temperature warning, planting conditions advice, etc.
-             _buildCustomInsightCardIfNeeded(currentConditions, days), // Example
+             _buildCustomInsightCardIfNeeded(currentConditions, days),
 
-             const SizedBox(height: 16), // Bottom padding
+             const SizedBox(height: 16),
           ],
         ),
       ),
     );
   }
 
-   // Example of generating a custom insight card
    Widget _buildCustomInsightCardIfNeeded(Map<String, dynamic>? current, List<dynamic> forecastDays) {
-     // Example: Check if temperature is very high today or tomorrow
-     double? todayMaxTemp = forecastDays.isNotEmpty ? forecastDays[0]['tempmax'] : null;
+     // ... (implementation remains the same) ...
+      double? todayMaxTemp = forecastDays.isNotEmpty ? forecastDays[0]['tempmax'] : null;
      double? currentTemp = current?['temp'];
      bool isHot = (currentTemp != null && currentTemp > 35) || (todayMaxTemp != null && todayMaxTemp > 35);
 
@@ -337,16 +393,16 @@ class _WeatherScreenState extends State<WeatherScreen> {
          ),
        );
      }
-     return const SizedBox.shrink(); // Return empty if no relevant insight
+     return const SizedBox.shrink();
    }
-
 
 } // End of _WeatherScreenState
 
-// KeyInsightsCard Definition (assuming it's in the same file or imported)
+
+// KeyInsightsCard Definition (keep as is)
 class KeyInsightsCard extends StatelessWidget {
-  // ... (Keep the KeyInsightsCard code as you provided) ...
-  final String title;
+ // ...
+ final String title;
   final String description;
   final IconData? leadingIcon;
   final Color? leadingIconColor;
@@ -368,16 +424,16 @@ class KeyInsightsCard extends StatelessWidget {
       child: SizedBox(
         width: double.infinity,
         child: Padding(
-          padding: const EdgeInsets.all(12.0), // Adjusted padding
+          padding: const EdgeInsets.all(12.0),
           child: Row(
             children: [
-              if (leadingIcon != null) // Only show icon if provided
+              if (leadingIcon != null)
                 Padding(
                   padding: const EdgeInsets.only(right: 16.0),
                   child: Icon(
                     leadingIcon,
-                    color: leadingIconColor ?? AppColors.grey, // Default color
-                    size: 36.0, // Adjusted size
+                    color: leadingIconColor ?? AppColors.grey,
+                    size: 36.0,
                   ),
                 ),
               Expanded(
@@ -388,18 +444,16 @@ class KeyInsightsCard extends StatelessWidget {
                       title,
                       style: TextStyle(
                         color: AppColors.grey,
-                        fontSize: 15, // Adjusted size
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4), // Added spacing
+                    const SizedBox(height: 4),
                     Text(
                       description,
-                      // maxLines: 4, // Allow wrapping
-                      // overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: AppColors.grey,
-                        fontSize: 14.0, // Adjusted size
+                        fontSize: 14.0,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
@@ -414,50 +468,5 @@ class KeyInsightsCard extends StatelessWidget {
   }
 }
 
-// Make sure DailyWeatherDetail and WeatherCard are imported or defined
-// Example modification needed for DailyWeatherDetail (if not already done):
-/*
-class DailyWeatherDetail extends StatelessWidget {
-  final String day;
-  final String temperature; // Now expects range like "25°C - 35°C"
-  final String prediction; // Now expects rain chance like "20% chance"
-  final String weatherCondition;
-  final VoidCallback onPressed;
-
-  const DailyWeatherDetail({
-    Key? key,
-    required this.day,
-    required this.temperature,
-    required this.prediction,
-    required this.weatherCondition,
-    required this.onPressed,
-  }) : super(key: key);
-
- // ... rest of DailyWeatherDetail implementation using these props ...
-}
-*/
-
-// Example modification needed for WeatherCard (if not already done):
-/*
-class WeatherCard extends StatelessWidget {
-  final String temperature; // Expects string like "33"
-  final String weatherPrediction; // Expects string like "Conditions: Humid" or an alert
-  final String weatherCondition;
-  final String description; // Expects location string
-  final String buttonText;
-  final VoidCallback onButtonPressed;
-
-  const WeatherCard({
-     Key? key,
-     required this.temperature,
-     required this.weatherPrediction,
-     required this.weatherCondition,
-     required this.description,
-     required this.buttonText,
-     required this.onButtonPressed,
-   }) : super(key: key);
-
- // ... rest of WeatherCard implementation using these props ...
- // Remember to format temperature with °C inside the build method
-}
-*/
+// Ensure DailyWeatherDetail and WeatherCard widgets are defined or imported
+// and accept the data types being passed (Strings).

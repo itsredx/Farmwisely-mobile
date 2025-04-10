@@ -33,13 +33,14 @@ MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /home/user/
 	android:name
 		INJECTED from /home/user/myapp/android/app/src/main/AndroidManifest.xml
 manifest
-ADDED from /home/user/myapp/android/app/src/main/AndroidManifest.xml:1:1-50:12
-MERGED from /home/user/myapp/android/app/src/main/AndroidManifest.xml:1:1-50:12
+ADDED from /home/user/myapp/android/app/src/main/AndroidManifest.xml:1:1-57:12
+MERGED from /home/user/myapp/android/app/src/main/AndroidManifest.xml:1:1-57:12
 INJECTED from /home/user/myapp/android/app/src/debug/AndroidManifest.xml:1:1-7:12
 INJECTED from /home/user/myapp/android/app/src/debug/AndroidManifest.xml:1:1-7:12
 INJECTED from /home/user/myapp/android/app/src/debug/AndroidManifest.xml:1:1-7:12
 MERGED from [:image_picker_android] /home/user/myapp/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:2:1-34:12
 MERGED from [:flutter_plugin_android_lifecycle] /home/user/myapp/build/flutter_plugin_android_lifecycle/intermediates/merged_manifest/debug/AndroidManifest.xml:2:1-7:12
+MERGED from [:geocoding_android] /home/user/myapp/build/geocoding_android/intermediates/merged_manifest/debug/AndroidManifest.xml:2:1-7:12
 MERGED from [:geolocator_android] /home/user/myapp/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:2:1-15:12
 MERGED from [:permission_handler_android] /home/user/myapp/build/permission_handler_android/intermediates/merged_manifest/debug/AndroidManifest.xml:2:1-7:12
 MERGED from [:shared_preferences_android] /home/user/myapp/build/shared_preferences_android/intermediates/merged_manifest/debug/AndroidManifest.xml:2:1-7:12
@@ -145,6 +146,8 @@ MERGED from [:image_picker_android] /home/user/myapp/build/image_picker_android/
 MERGED from [:image_picker_android] /home/user/myapp/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:6:5-44
 MERGED from [:flutter_plugin_android_lifecycle] /home/user/myapp/build/flutter_plugin_android_lifecycle/intermediates/merged_manifest/debug/AndroidManifest.xml:5:5-44
 MERGED from [:flutter_plugin_android_lifecycle] /home/user/myapp/build/flutter_plugin_android_lifecycle/intermediates/merged_manifest/debug/AndroidManifest.xml:5:5-44
+MERGED from [:geocoding_android] /home/user/myapp/build/geocoding_android/intermediates/merged_manifest/debug/AndroidManifest.xml:5:5-44
+MERGED from [:geocoding_android] /home/user/myapp/build/geocoding_android/intermediates/merged_manifest/debug/AndroidManifest.xml:5:5-44
 MERGED from [:geolocator_android] /home/user/myapp/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:5:5-44
 MERGED from [:geolocator_android] /home/user/myapp/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:5:5-44
 MERGED from [:permission_handler_android] /home/user/myapp/build/permission_handler_android/intermediates/merged_manifest/debug/AndroidManifest.xml:5:5-44

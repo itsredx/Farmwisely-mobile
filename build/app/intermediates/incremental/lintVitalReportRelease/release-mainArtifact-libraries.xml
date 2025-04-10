@@ -17,6 +17,19 @@
       externalAnnotations="annotations.zip"
       proguardRules="proguard.txt"/>
   <library
+      name="/home/user/myapp/android@@:geocoding_android::release"
+      jars="/home/user/myapp/build/geocoding_android/.transforms/84211737710869b426d3f81e0643feba/transformed/out/jars/classes.jar:/home/user/myapp/build/geocoding_android/.transforms/84211737710869b426d3f81e0643feba/transformed/out/jars/libs/R.jar"
+      resolved="com.baseflow.geocoding:geocoding_android:unspecified"
+      folder="/home/user/myapp/build/geocoding_android/.transforms/84211737710869b426d3f81e0643feba/transformed/out"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
       name="/home/user/myapp/android@@:geolocator_android::release"
       jars="/home/user/myapp/build/geolocator_android/.transforms/f947af5620b9b7db89302614977924b6/transformed/out/jars/classes.jar:/home/user/myapp/build/geolocator_android/.transforms/f947af5620b9b7db89302614977924b6/transformed/out/jars/libs/R.jar"
       resolved="com.baseflow.geolocator:geolocator_android:unspecified"
