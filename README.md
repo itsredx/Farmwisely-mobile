@@ -1,6 +1,6 @@
 # Farmwisely
 
-A new Flutter project.
+A new AI project.
 
 ## Getting Started
 
